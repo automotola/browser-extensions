@@ -31,6 +31,26 @@ _ATL_FUNC_INFO CBrowserHelperObject::OnWindowStateChangedInfo = {
     }
 };
 
+_ATL_FUNC_INFO CBrowserHelperObject::OnBeforeNavigate2Info = {
+    CC_STDCALL, VT_EMPTY, 7, {
+        VT_DISPATCH,
+        VT_VARIANT | VT_BYREF,
+        VT_VARIANT | VT_BYREF,
+        VT_VARIANT | VT_BYREF,
+        VT_VARIANT | VT_BYREF,
+        VT_VARIANT | VT_BYREF,
+        VT_BOOL | VT_BYREF
+    }
+};
+
+_ATL_FUNC_INFO CBrowserHelperObject::OnDownloadBeginInfo = {
+    CC_STDCALL, VT_EMPTY, 0
+};
+
+_ATL_FUNC_INFO CBrowserHelperObject::OnDownloadCompleteInfo = {
+    CC_STDCALL, VT_EMPTY, 0
+};
+
 
 /**
  * Construction
@@ -39,7 +59,10 @@ CBrowserHelperObject::CBrowserHelperObject()
     : m_isConnected(false),
 	  m_isAttached(false),
       m_nativeAccessible(),
-      m_frameProxy(NULL)
+      m_frameProxy(NULL),
+      m_nPageCounter(0),
+      m_nObjCounter(0),
+      m_bIsRefresh(false)
 {
     logger->debug(L"\n----------------------------------------------------------");
     logger->debug(L"BrowserHelperObject Initializing...");
@@ -410,6 +433,8 @@ void __stdcall CBrowserHelperObject::OnNavigateComplete2(IDispatch *dispatch,
 void __stdcall CBrowserHelperObject::OnDocumentComplete(IDispatch *dispatch,
                                                         VARIANT   *url)
 {
+    m_nPageCounter--;
+
     Manifest::pointer manifest = _AtlModule.moduleManifest;
 
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(dispatch);
@@ -698,6 +723,54 @@ void __stdcall CBrowserHelperObject::OnWindowStateChanged(DWORD flags, DWORD mas
             return;
         }
     }
+}
+
+
+/**
+* Event: OnBeforeNavigate2
+*/
+void __stdcall CBrowserHelperObject::OnBeforeNavigate2(IDispatch *idispatch, VARIANT *url, VARIANT *Flags,
+    VARIANT *TargetFrameName, VARIANT *PostData,
+    VARIANT *Headers, VARIANT_BOOL* Cancel)
+{
+    // add page counter so we can compare in DownloadBegin function
+    m_nPageCounter++;
+
+    // capture relevant information on the URL etc we are about to load.
+    BSTR strHeaders = (BSTR)Headers->bstrVal;
+    BSTR strUrl = (BSTR)url->bstrVal;
+}
+
+/**
+* Event: OnDownloadBegin
+*/
+void __stdcall CBrowserHelperObject::OnDownloadBegin()
+{
+    if (m_nPageCounter == 0)
+    {
+        m_bIsRefresh = true;
+        
+    }
+    m_nObjCounter++;
+}
+
+/**
+* Event: OnDownloadComplete
+*/
+void __stdcall CBrowserHelperObject::OnDownloadComplete()
+{
+    // decrease counter to compare with DownloadBegin
+    m_nObjCounter--;
+
+    // if m_nObjCounter is Zero and we are in Refresh mode we know that the refreshed page has loaded.
+    if (m_bIsRefresh && m_nObjCounter == 0)
+    {
+        // have our parent class use this information in some way....
+        //m_pParent->DisplayDocCompleteRefresh(m_strUrl);
+        m_bIsRefresh = false;
+    }
+
+
 }
 
 
