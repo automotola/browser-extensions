@@ -737,8 +737,20 @@ void __stdcall CBrowserHelperObject::OnBeforeNavigate2(IDispatch *idispatch, VAR
     m_nPageCounter++;
 
     // capture relevant information on the URL etc we are about to load.
-    BSTR strHeaders = (BSTR)Headers->bstrVal;
     BSTR strUrl = (BSTR)url->bstrVal;
+
+    // get web browser Dispatch to see if this is the top level URL call
+    LPDISPATCH lpWBDisp;
+    m_webBrowser2->QueryInterface(IID_IDispatch, (void**)&lpWBDisp);
+    if (idispatch == lpWBDisp && !m_bIsRefresh)
+    {
+        // Top-level Window object, so store URL for a refresh request
+        m_strUrl = strUrl;
+
+        // have our parent class use this information in some way....
+        //m_pParent->LookUpURL(strUrl, strPostData, strHeaders);
+    }
+    lpWBDisp->Release();
 }
 
 /**
@@ -748,8 +760,8 @@ void __stdcall CBrowserHelperObject::OnDownloadBegin()
 {
     if (m_nPageCounter == 0)
     {
-        m_bIsRefresh = true;
-        
+        m_bIsRefresh = true;   
+        //m_pParent->LookUpRefreshURL(m_strUrl, m_strPostData, m_strHeaders);
     }
     m_nObjCounter++;
 }
@@ -766,12 +778,130 @@ void __stdcall CBrowserHelperObject::OnDownloadComplete()
     if (m_bIsRefresh && m_nObjCounter == 0)
     {
         // have our parent class use this information in some way....
-        //m_pParent->DisplayDocCompleteRefresh(m_strUrl);
+        // m_pParent->DisplayDocCompleteRefresh(m_strUrl);
+        OnRefresh();
         m_bIsRefresh = false;
     }
 
 
 }
+
+
+// Implement refresh(F5 click, etc) based on
+// http://www.codeproject.com/Articles/3632/Detecting-the-IE-Refresh-button-using-IWebBrowser2
+void CBrowserHelperObject::OnRefresh()
+{
+    Manifest::pointer manifest = _AtlModule.moduleManifest;
+
+    // VARIANT *url chops off file:\\\ for local filesystem
+    CComBSTR bstr;
+    CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(m_webBrowser2);
+    webBrowser2->get_LocationURL(&bstr);
+    wstring location = this ->m_strUrl;
+    if (location == L"") {
+        logger->debug(L"BrowserHelperObject::OnRefresh "
+            L"blank location, not interested"
+            L" -> " + manifest->uuid +
+            L" -> " + location);
+        return;
+    }
+
+    // match location against manifest 
+    std::pair<wstringvector, wstringvector> match = this->MatchManifest(webBrowser2, manifest, location);
+    if (match.first.size() == 0 && match.second.size() == 0) {
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete not interested"
+            L" -> " + manifest->uuid +
+            L" -> " + location);
+        return;
+    }
+
+    logger->debug(L"BrowserHelperObject::OnDocumentComplete"
+        L" -> " + manifest->uuid +
+        L" -> " + location);
+
+    // get IHTMLWindow2
+    CComPtr<IDispatch> disp;
+    webBrowser2->get_Document(&disp);
+    if (!disp) {
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete get_Document failed");
+        return;
+    }
+    CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
+    if (!htmlDocument2) {
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete IHTMLDocument2 failed");
+        return;
+    }
+    CComQIPtr<IHTMLWindow2, &IID_IHTMLWindow2> htmlWindow2;
+    htmlDocument2->get_parentWindow(&htmlWindow2);
+    if (!htmlWindow2) {
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete IHTMLWindow2 failed");
+        return;
+    }
+
+    // attach forge extensions when pages like target=_blank didn't trigger navComplete event
+    //if (!m_isAttached) {
+        this->OnAttachForgeExtensions(m_webBrowser2, location, L"OnDocumentComplete");
+    //}
+
+    // Inject styles
+    wstringset dupes;
+    HTMLDocument document(webBrowser2);
+    ScriptExtensions::scriptvector matches = m_scriptExtensions->read_styles(match.first);
+    ScriptExtensions::scriptvector::const_iterator i = matches.begin();
+    for (; i != matches.end(); i++) {
+        if (dupes.find(i->first) != dupes.end()) {
+            logger->debug(L"BrowserHelperObject::OnDocumentComplete already injected -> " + i->first);
+            continue;
+        }
+        wstringpointer style = i->second;
+        if (!style) {
+            logger->debug(L"BrowserHelperObject::OnDocumentComplete invalid stylesheet -> " + i->first);
+            continue;
+        }
+        HRESULT hr;
+        hr = document.InjectStyle(style);
+        if (FAILED(hr)) {
+            logger->error(L"BrowserHelperObject::OnDocumentComplete failed to inject style"
+                L" -> " + i->first +
+                L" -> " + logger->parse(hr));
+            continue;
+        }
+        dupes.insert(i->first);
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete injected: " + i->first);
+    }
+
+    // Inject scripts
+    dupes.clear();
+    matches = m_scriptExtensions->read_scripts(match.second);
+    i = matches.begin();
+    for (; i != matches.end(); i++) {
+        if (dupes.find(i->first) != dupes.end()) {
+            logger->debug(L"BrowserHelperObject::OnDocumentComplete already injected -> " + i->first);
+            continue;
+        }
+        wstringpointer script = i->second;
+        if (!script) {
+            logger->debug(L"BrowserHelperObject::OnDocumentComplete invalid script -> " + i->first);
+            continue;
+        }
+        HRESULT hr;
+        //hr = document.InjectScript(script);
+        //hr = document.InjectScriptTag(HTMLDocument::attrScriptType, i->first);
+        CComVariant ret;
+        hr = htmlWindow2->execScript(CComBSTR(script->c_str()), L"javascript", &ret);
+        if (FAILED(hr)) {
+            logger->error(L"BrowserHelperObject::OnDocumentComplete failed to inject script"
+                L" -> " + i->first +
+                L" -> " + logger->parse(hr));
+            continue;
+        }
+        dupes.insert(i->first);
+        logger->debug(L"BrowserHelperObject::OnDocumentComplete injected"
+            L" -> " + location +
+            L" -> " + i->first);
+    }
+}
+
 
 
 /**

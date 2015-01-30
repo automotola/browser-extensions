@@ -106,8 +106,8 @@ END_SINK_MAP()
     int m_nObjCounter;
     bool m_bIsRefresh;
     wstring m_strUrl;
-    wstring m_strHeaders;
-    wstring m_strPostData;
+
+    void OnRefresh();
     
     // used to filter secondary requests
     CComPtr<IWebBrowser2> m_webBrowser2;
