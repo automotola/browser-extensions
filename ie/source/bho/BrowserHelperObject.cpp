@@ -746,9 +746,6 @@ void __stdcall CBrowserHelperObject::OnBeforeNavigate2(IDispatch *idispatch, VAR
     {
         // Top-level Window object, so store URL for a refresh request
         m_strUrl = strUrl;
-
-        // have our parent class use this information in some way....
-        //m_pParent->LookUpURL(strUrl, strPostData, strHeaders);
     }
     lpWBDisp->Release();
 }
@@ -761,7 +758,6 @@ void __stdcall CBrowserHelperObject::OnDownloadBegin()
     if (m_nPageCounter == 0)
     {
         m_bIsRefresh = true;   
-        //m_pParent->LookUpRefreshURL(m_strUrl, m_strPostData, m_strHeaders);
     }
     m_nObjCounter++;
 }
@@ -777,8 +773,6 @@ void __stdcall CBrowserHelperObject::OnDownloadComplete()
     // if m_nObjCounter is Zero and we are in Refresh mode we know that the refreshed page has loaded.
     if (m_bIsRefresh && m_nObjCounter == 0)
     {
-        // have our parent class use this information in some way....
-        // m_pParent->DisplayDocCompleteRefresh(m_strUrl);
         OnRefresh();
         m_bIsRefresh = false;
     }
