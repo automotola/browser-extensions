@@ -349,7 +349,6 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
         L" -> " + wstring(url) +
         L" -> " + wstring(name));
 
-
     if (this->tabId == 0) {
         // it's a magic. don't touch it!
         TCHAR szURL[256] = { 0 };
@@ -358,6 +357,7 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
         memset(cookieData, 0, sizeof(TCHAR));
         DWORD dwSize = 0;
         LPCWSTR cookieName = (SysStringLen(name) == 0) ? NULL : W2T(name);
+
         if (!InternetGetCookieEx(szURL, cookieName, cookieData, &dwSize, 0, NULL))
         {
             if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
@@ -413,10 +413,10 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
                 wstring empty = L"";
                 CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(empty.c_str()));
             }
-            
         }
     }
-    else {
+    else
+	{
         logger->error(L"NativeExtensions::cookies_get failed"
             L" -> " + wstring(url) +
             L" -> " + wstring(name));
@@ -430,7 +430,6 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
 
 STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_success)
 {
-
     logger->debug(L"NativeExtensions::cookies_remove "
         L" -> " + wstring(url) +
         L" -> " + wstring(name));
@@ -440,7 +439,7 @@ STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_su
         wstring newCookieData = wstring(name) + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
         *out_success = InternetSetCookie(W2T(url), NULL, newCookieData.c_str()) ? TRUE : FALSE;
     }
-    else 
+    else
     {
         logger->error(L"NativeExtensions::cookies_remove failed: tabId != 0"
             L" -> " + wstring(url) +
