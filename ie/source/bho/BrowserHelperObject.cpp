@@ -782,10 +782,7 @@ void __stdcall CBrowserHelperObject::OnDownloadComplete()
         OnRefresh();
         m_bIsRefresh = false;
     }
-
-
 }
-
 
 // Implement refresh(F5 click, etc) based on
 // http://www.codeproject.com/Articles/3632/Detecting-the-IE-Refresh-button-using-IWebBrowser2
