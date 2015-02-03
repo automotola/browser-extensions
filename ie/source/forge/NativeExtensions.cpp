@@ -351,7 +351,7 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
 
     if (this->tabId == 0) {
         // it's a magic. don't touch it!
-        TCHAR szURL[256] = { 0 };
+        TCHAR* szURL = new TCHAR[SysStringLen(url)];
         _tcscpy(szURL, url);
         LPTSTR cookieData = new TCHAR[1]; 
         memset(cookieData, 0, sizeof(TCHAR));
