@@ -14,7 +14,7 @@ internal.priv.call = function (methodName, params, success, error) {
 	try {
 		strparams = JSON.stringify(params);
 	} catch (e) { }
-	forge.logging.debug("Received call to "+methodName+" with parameters: "+strparams);
+	//forge.logging.debug("Received call to "+methodName+" with parameters: "+strparams);
 
 	if (!success) {
 		success = nullFunction;
