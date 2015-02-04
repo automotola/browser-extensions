@@ -369,12 +369,10 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
                 if (InternetGetCookieEx(szURL, cookieName, cookieData, &dwSize, 0, NULL))
                 {
                     CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(cookieData).c_str()));
-                    delete[] cookieData;
                 }
                 else if (GetLastError() == ERROR_NO_MORE_ITEMS)
                 {
                     CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(L"").c_str()));
-                    delete[] cookieData;
                 }
                 else
                 {
@@ -385,11 +383,10 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
                     wstring message = L"Error code: " + std::to_wstring(GetLastError());
                     CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
                 }
-            }
+			}
             else if (GetLastError() == ERROR_NO_MORE_ITEMS)
             {
                 CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(L"").c_str()));
-                delete[] cookieData;
             }
             else
             {
@@ -406,7 +403,6 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
             if (cookieData != NULL)
             {
                 CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(cookieData).c_str()));
-                delete[] cookieData;
             }
             else
             {
@@ -414,7 +410,9 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
                 CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(empty.c_str()));
             }
         }
-    }
+
+		delete[] cookieData;
+	}
     else
 	{
         logger->error(L"NativeExtensions::cookies_get failed"
@@ -425,7 +423,7 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
         CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
     }
 
-    return S_OK;
+	return S_OK;
 }
 
 STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_success)
