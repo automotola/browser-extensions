@@ -362,7 +362,7 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
         {
             if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
             {
-                delete[]cookieData;
+                delete[] cookieData;
                 cookieData = new TCHAR[dwSize + 1];
                 memset(cookieData, 0, sizeof(TCHAR)*(dwSize + 1));
                 // Try the call again.
