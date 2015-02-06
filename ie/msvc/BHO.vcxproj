@@ -121,6 +121,8 @@
     <TargetName>bho32</TargetName>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <GenerateManifest>true</GenerateManifest>
+    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_HOME)\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)..\build\$(Platform)\$(Configuration)\</OutDir>
@@ -128,6 +130,8 @@
     <TargetName>bho32</TargetName>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <GenerateManifest>true</GenerateManifest>
+    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_HOME)\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\build\$(Platform)\$(Configuration)\</OutDir>
@@ -135,6 +139,8 @@
     <TargetName>bho64</TargetName>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <GenerateManifest>true</GenerateManifest>
+    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_HOME)\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\build\$(Platform)\$(Configuration)\</OutDir>
@@ -142,6 +148,8 @@
     <TargetName>bho64</TargetName>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <GenerateManifest>true</GenerateManifest>
+    <IncludePath>$(BOOST_HOME);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BOOST_HOME)\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

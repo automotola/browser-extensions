@@ -129,5 +129,5 @@ Changing C++ libraries
 ### Windows
 
 * Boost: Download and install boost_1_57_0-msvc-12.0-32.exe from http://sourceforge.net/projects/boost/files/boost-binaries/1.57.0/
+* Add a BOOST_HOME variable to your environment and set it to where you installed boost, without the trailing slash.
 * Open .\ie\msvc\ForgeIE.sln
-* For every project in solution add include dir(e.g. C:\Cpp\boost_1_57_0) and library dir(e.g. C:\Cpp\boost_1_57_0\lib32-msvc-12.0)
