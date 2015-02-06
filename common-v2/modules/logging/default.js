@@ -288,7 +288,7 @@ forge['logging'] = {
 	},
 
 	'debug': function(message, exception) {
-		forge.logging.log(message, exception, forge.logging.LEVELS.DEBUG);
+		//forge.logging.log(message, exception, forge.logging.LEVELS.DEBUG);
 	},
 	'info': function(message, exception) {
 		forge.logging.log(message, exception, forge.logging.LEVELS.INFO);
