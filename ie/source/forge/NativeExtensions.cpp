@@ -7,6 +7,7 @@
 #include "NativeMessagingTypes.h"
 #include "AccessibleBrowser.h"
 #include "NotificationWindow.h"
+#include "wininet.h"
 
 
 /**
@@ -341,3 +342,109 @@ STDMETHODIMP CNativeExtensions::notification(BSTR icon, BSTR title, BSTR text,
     return S_OK;
 }
 
+STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
+    IDispatch *success, IDispatch *error)
+{
+    logger->debug(L"NativeExtensions::cookies_get "
+        L" -> " + wstring(url) +
+        L" -> " + wstring(name));
+
+    if (this->tabId == 0) {
+        // it's a magic. don't touch it!
+        TCHAR* szURL = new TCHAR[SysStringLen(url)];
+        _tcscpy(szURL, url);
+        LPTSTR cookieData = new TCHAR[1]; 
+        memset(cookieData, 0, sizeof(TCHAR));
+        DWORD dwSize = 0;
+        LPCWSTR cookieName = (SysStringLen(name) == 0) ? NULL : W2T(name);
+
+        if (!InternetGetCookieEx(szURL, cookieName, cookieData, &dwSize, 0, NULL))
+        {
+            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+            {
+                delete[] cookieData;
+                cookieData = new TCHAR[dwSize + 1];
+                memset(cookieData, 0, sizeof(TCHAR)*(dwSize + 1));
+                // Try the call again.
+                if (InternetGetCookieEx(szURL, cookieName, cookieData, &dwSize, 0, NULL))
+                {
+                    CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(cookieData).c_str()));
+                }
+                else if (GetLastError() == ERROR_NO_MORE_ITEMS)
+                {
+                    CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(L"").c_str()));
+                }
+                else
+                {
+                    logger->error(L"NativeExtensions::cookies_get failed"
+                        L" -> " + wstring(url) +
+                        L" -> " + wstring(name));
+
+                    wstring message = L"Error code: " + std::to_wstring(GetLastError());
+                    CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
+                }
+			}
+            else if (GetLastError() == ERROR_NO_MORE_ITEMS)
+            {
+                CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(L"").c_str()));
+            }
+            else
+            {
+                logger->error(L"NativeExtensions::cookies_get failed"
+                    L" -> " + wstring(url) +
+                    L" -> " + wstring(name));
+
+                wstring message = L"Error code: " + std::to_wstring(GetLastError());
+                CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
+            }
+        }
+        else
+        {
+            if (cookieData != NULL)
+            {
+                CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(wstring(cookieData).c_str()));
+            }
+            else
+            {
+                wstring empty = L"";
+                CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(empty.c_str()));
+            }
+        }
+
+		delete[] cookieData;
+	}
+    else
+	{
+        logger->error(L"NativeExtensions::cookies_get failed"
+            L" -> " + wstring(url) +
+            L" -> " + wstring(name));
+
+        wstring message = L"get cookies only from background page";
+        CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
+    }
+
+	return S_OK;
+}
+
+STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_success)
+{
+    logger->debug(L"NativeExtensions::cookies_remove "
+        L" -> " + wstring(url) +
+        L" -> " + wstring(name));
+
+    if (this->tabId == 0)
+    {
+        wstring newCookieData = wstring(name) + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
+        *out_success = InternetSetCookie(W2T(url), NULL, newCookieData.c_str()) ? TRUE : FALSE;
+    }
+    else
+    {
+        logger->error(L"NativeExtensions::cookies_remove failed: tabId != 0"
+            L" -> " + wstring(url) +
+            L" -> " + wstring(name));
+
+        *out_success = FALSE;
+    }
+
+    return S_OK;
+}

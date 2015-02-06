@@ -590,6 +590,51 @@ var apiImpl = {
                 success(url);
             }
         }
+    },
+    cookies: {
+        get: function (params, success, error) {
+            window.extensions.cookies_get(params.url, params.name,
+                function (content) {
+                    if (typeof success === "function") {
+                        var res = function (str) {
+                            var obj = []
+                            var pairs = str.split(/; */);
+
+                            pairs.forEach(function (pair) {
+                                var eq_idx = pair.indexOf('=')
+                                if (eq_idx < 0) {
+                                    return;
+                                }
+
+                                var key = pair.substr(0, eq_idx).trim()
+                                var val = pair.substr(++eq_idx, pair.length).trim();
+
+                                // quoted values
+                                if ('"' == val[0]) {
+                                    val = val.slice(1, -1);
+                                }
+                                var valdec = "";
+                                try {
+                                    valdec = decodeURIComponent(val);
+
+                                } catch (e) {
+                                    valdec = val;
+                                }
+                                obj.push({ name: key, value: valdec });
+                            });
+
+                            return obj;
+                        }(content);
+                        success(res);
+                    }
+                },
+                typeof error === "function" ? error : function () { });
+        },
+        remove: function (params) {
+            return window.extensions.cookies_remove(params.url, params.name);
+        }
     }
 }
+
+
 
