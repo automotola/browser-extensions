@@ -318,5 +318,23 @@ var apiImpl = {
 				success(chrome.extension.getURL('src'+(name.substring(0,1) == '/' ? '' : '/')+name));
 			}
 		}
-	}
+	},
+  cookies: {
+    get: function(p, cb) {
+      chrome.cookies.getAll({domain: p.domain}, cookies => {
+        var cookie = cookies.find(c => p.name == c.name && p.path == c.path)
+        if (cookie) return cb(cookie.value)
+        cb()
+      })
+    },
+    watch: function(p, cb) {
+      chrome.cookies.onChanged.addListener(e => {
+        var c = e.cookie
+        if (!c || !c.name || p.path != c.path || p.name != c.name) return
+        if (c.domain.indexOf(p.domain) == -1) return
+        if (e.cause == "explicit") cb(c.value)
+        if (e.cause == "expired_overwrite") cb()
+      })
+    }
+  }
 }

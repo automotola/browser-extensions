@@ -45,7 +45,7 @@ logMessage = function(message, level) {
     }
     message = '[' + eyeCatcher + ' BG' + '] '
             + (message.indexOf('\n') === -1 ? '' : '\n') + message;
-    
+
     // Also log to the console if it exists.
     if (typeof console !== "undefined") {
         switch (level) {
@@ -98,15 +98,15 @@ forge.is.ie = function() {
  * @param {String} type (optional) an arbitrary string: if included,
  *        the callback will only be fired for messages broadcast with
  *        the same type; if omitted, the callback will be fired for
- *        all messages 
+ *        all messages
  * @param {Function} success a function which will be called
  *        with the contents of relevant broadcast messages as its
- *        first argument 
+ *        first argument
  * @param {Function} error Not used.
  */
 forge.message.listen = function(type, callback, error)
 {
-    if (typeof(type) === 'function') { 
+    if (typeof(type) === 'function') {
         // no type passed in: shift arguments left one
         error = callback;
         callback = type;
@@ -142,7 +142,7 @@ forge.message.listen = function(type, callback, error)
  */
 forge.message.broadcast = function(type, content, callback, error)
 {
-    if (typeof(type) === 'function') { 
+    if (typeof(type) === 'function') {
         // no type passed in: shift arguments left one
         error = callback;
         callback = content;
@@ -161,7 +161,7 @@ forge.message.broadcast = function(type, content, callback, error)
                " -> " + typeof callback +
                " -> " + typeof error);*/
 
-    window.messaging.bg_broadcast(forge.config.uuid, type, 
+    window.messaging.bg_broadcast(forge.config.uuid, type,
                                   safe_jstringify(content),
                                   function(content) {
                                       callback(safe_jparse(content));
@@ -173,7 +173,7 @@ forge.message.broadcast = function(type, content, callback, error)
  * Post a message to focussed non-privileged page where your extension is active
  */
 forge.message.toFocussed = function(type, content, callback, error) {
-    if (typeof(type) === 'function') { 
+    if (typeof(type) === 'function') {
         // no type passed in: shift arguments left one
         error = callback;
         callback = content;
@@ -192,16 +192,16 @@ forge.message.toFocussed = function(type, content, callback, error) {
                " -> " + typeof callback +
                " -> " + typeof error);*/
 
-    window.messaging.bg_toFocussed(forge.config.uuid, type, 
+    window.messaging.bg_toFocussed(forge.config.uuid, type,
                                    safe_jstringify(content),
                                    function(content) {
                                        callback(safe_jparse(content));
-                                   }, error); 
+                                   }, error);
 };
 
 
-/** 
- * Calls from content-script 
+/**
+ * Calls from content-script
  */
 forge.message.listen("bridge", function(msg, reply) {
     function handleResult(status) {
@@ -246,7 +246,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         get: function(params, success, error) {
-            window.extensions.prefs_get(forge.config.uuid, params.key, 
+            window.extensions.prefs_get(forge.config.uuid, params.key,
                                         function(value) {
                                             try {
                                                 value = JSON.parse(value);
@@ -256,7 +256,7 @@ var apiImpl = {
                                                 return success(null);
                                             }
                                             success(value);
-                                        }, 
+                                        },
                                         error ? error : function(){});
         },
 
@@ -272,18 +272,18 @@ var apiImpl = {
             try {
                 json = safe_jstringify(params.value);
             } catch (e) { error(json); }
-            window.extensions.prefs_set(forge.config.uuid, 
-                                        params.key, json, 
+            window.extensions.prefs_set(forge.config.uuid,
+                                        params.key, json,
                                         function(value) {
                                             try {
                                                 value = JSON.parse(value);
                                             } catch (e) {
                                                 loggerpriv("prefs.set" +
                                                            " -> " + value + " is not JSON parseable");
-                                                return success(null); 
+                                                return success(null);
                                             }
                                             success(value);
-                                        }, 
+                                        },
                                         error ? error : function(){});
         },
 
@@ -295,7 +295,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         keys: function(params, success, error) {
-            window.extensions.prefs_keys(forge.config.uuid, 
+            window.extensions.prefs_keys(forge.config.uuid,
                                          function(result) {
                                              try {
                                                  loggerpriv("prefs.keys" +
@@ -304,10 +304,10 @@ var apiImpl = {
                                              } catch (e) {
                                                  loggerpriv("prefs.keys" +
                                                             " -> " + result + " is not JSON parseable");
-                                                 return success(null); 
+                                                 return success(null);
                                              }
                                              success(result);
-                                         }, 
+                                         },
                                          error ? error : function(){});
         },
 
@@ -319,7 +319,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         all: function(params, success, error) {
-            window.extensions.prefs_all(forge.config.uuid, 
+            window.extensions.prefs_all(forge.config.uuid,
                                         function(result) {
                                             try {
                                                 loggerpriv("prefs.all" +
@@ -328,10 +328,10 @@ var apiImpl = {
                                             } catch (e) {
                                                 loggerpriv("prefs.all" +
                                                            " -> " + result + " is not JSON parseable");
-                                                return success(null); 
+                                                return success(null);
                                             }
                                             success(keys);
-                                        }, 
+                                        },
                                         error ? error : function(){});
         },
 
@@ -344,7 +344,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         clear: function(params, success, error) {
-            window.extensions.prefs_clear(forge.config.uuid, params.key, 
+            window.extensions.prefs_clear(forge.config.uuid, params.key,
                                           success ? success : function(){},
                                           error ? error : function(){});
         },
@@ -358,7 +358,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         clearAll: function(params, success, error) {
-            window.extensions.prefs_clear(forge.config.uuid, "*", 
+            window.extensions.prefs_clear(forge.config.uuid, "*",
                                           success ? success : function(){},
                                           error ? error : function(){});
         }
@@ -380,7 +380,7 @@ var apiImpl = {
             // create dummy callbacks if required
             params_.success = typeof params_.success === 'function' ? params_.success : function(){};
             params_.error   = typeof params_.error   === 'function' ? params_.error   : function(){};
-            
+
             // Copy params to prevent overwriting of original success/error
             var params = $.extend({}, params_);
             params.success = success;
@@ -389,7 +389,7 @@ var apiImpl = {
                 error({ message: 'api.ajax with ' + json + ' failed. ' + status + ': ' + err,
                         status: status, err: err });
             }
-            
+
             // check arguments
             params.type = params.type ? params.type : "GET";
             params.data = params.data ? params.data : "";
@@ -398,7 +398,7 @@ var apiImpl = {
             params.accepts = params.accepts ? params.accepts : ["*/*"];
             params.accepts = typeof params.accepts === "string" ? [params.accepts] : params.accepts;
 
-            // encode data 
+            // encode data
             if (params.type === "GET") {
                 params.url = internal.generateURI(params.url, params.data);
                 params.data = "";
@@ -409,20 +409,20 @@ var apiImpl = {
 
             try {
                 // TODO headers
-                params.contentType = params.contentType ? params.contentType : "text/html"; 
+                params.contentType = params.contentType ? params.contentType : "text/html";
                 window.extensions.xhr(params.type,
-                                      params.url, 
+                                      params.url,
                                       params.data,
                                       params.contentType,
                                       JSON.stringify(params.headers),
                                       function(data) {
                                           if (params.dataType === "json") {
-                                              try { 
-                                                  var json = JSON.parse(data); 
+                                              try {
+                                                  var json = JSON.parse(data);
                                                   data = json;
-                                              }  catch (e) { 
+                                              }  catch (e) {
                                                   loggerpriv("request.ajax" +
-                                                             " json error -> " + data); 
+                                                             " json error -> " + data);
                                               }
                                           }
                                           success(data);
@@ -434,7 +434,7 @@ var apiImpl = {
                                               data = json;
                                           } catch (e) {
                                               loggerpriv("request.ajax" +
-                                                         " json error -> " + data); 
+                                                         " json error -> " + data);
                                               data = e;
                                           }
                                           error(data);
@@ -462,14 +462,14 @@ var apiImpl = {
         open: function(params, success, error) {
             loggerpriv("tabs.open" +
                        " -> " + params +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
-            window.accessible.open(params.url, 
-                                   params.keepFocus, 
-                                   typeof success === "function" ? success : function(){}, 
+            window.accessible.open(params.url,
+                                   params.keepFocus,
+                                   typeof success === "function" ? success : function(){},
                                    typeof error   === "function" ? error   : function(){});
         },
-        
+
         /**
          * Closes a tab which contains a specified hash in the URL
          * @param params contains a hash, which is appended to the url of the tab to be closed
@@ -479,7 +479,7 @@ var apiImpl = {
         closeCurrent: function(params, success, error) {
             loggerpriv("tabs.closeCurrent" +
                        " -> " + params +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             error({ message: "cannot call closeCurrent() from background" });
         }
@@ -490,12 +490,12 @@ var apiImpl = {
             loggerpriv("button.setIcon" +
                        " -> " + forge.config.uuid +
                        " -> " + url +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             window.controls.button_setIcon(
                 forge.config.uuid,
-                url, 
-                typeof success === "function" ? success : function(){}, 
+                url,
+                typeof success === "function" ? success : function(){},
                 typeof error   === "function" ? error   : function(){});
         },
 
@@ -503,12 +503,12 @@ var apiImpl = {
             loggerpriv("button.setURL" +
                        " -> " + forge.config.uuid +
                        " -> " + url +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             window.controls.button_setURL(
                 forge.config.uuid,
-                url, 
-                typeof success === "function" ? success : function(){}, 
+                url,
+                typeof success === "function" ? success : function(){},
                 typeof error   === "function" ? error   : function(){});
         },
 
@@ -530,12 +530,12 @@ var apiImpl = {
             loggerpriv("button.setBadge" +
                        " -> " + forge.config.uuid +
                        " -> " + text +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             window.controls.button_setBadge(
                 forge.config.uuid,
-                text, 
-                typeof success === "function" ? success : function(){}, 
+                text,
+                typeof success === "function" ? success : function(){},
                 typeof error   === "function" ? error   : function(){});
         },
 
@@ -543,7 +543,7 @@ var apiImpl = {
             loggerpriv("button.setBadgeBackgroundColor" +
                        " -> " + forge.config.uuid +
                        " -> " + colorArray +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             if (!(colorArray instanceof Array) ||
                 colorArray.length != 4) {
@@ -551,8 +551,8 @@ var apiImpl = {
             }
             window.controls.button_setBadgeBackgroundColor(
                 forge.config.uuid,
-                colorArray[0], colorArray[1], colorArray[2], colorArray[3], 
-                typeof success === "function" ? success : function(){}, 
+                colorArray[0], colorArray[1], colorArray[2], colorArray[3],
+                typeof success === "function" ? success : function(){},
                 typeof error   === "function" ? error   : function(){});
         },
 
@@ -560,12 +560,12 @@ var apiImpl = {
             loggerpriv("button.setTitle" +
                        " -> " + forge.config.uuid +
                        " -> " + title +
-                       " -> " + typeof success + 
+                       " -> " + typeof success +
                        " -> " + typeof error);
             window.controls.button_setTitle(
                 forge.config.uuid,
-                title, 
-                typeof success === "function" ? success : function(){}, 
+                title,
+                typeof success === "function" ? success : function(){},
                 typeof error   === "function" ? error   : function(){});
         }
 
@@ -593,7 +593,7 @@ var apiImpl = {
     },
     cookies: {
         get: function (params, success, error) {
-            window.extensions.cookies_get(params.url, params.name,
+            window.extensions.cookies_get('https://' + params.domain + params.path, params.name,
                 function (content) {
                     if (typeof success === "function") {
                         var res = function (str) {
@@ -625,14 +625,22 @@ var apiImpl = {
 
                             return obj;
                         }(content);
-                        success(res);
+
+                        if (res.length > 0)
+                          success(res[0].value);
+                        else
+                          success();
                     }
                 },
+
                 typeof error === "function" ? error : function () { });
         },
-        remove: function (params) {
-            return window.extensions.cookies_remove(params.url, params.name);
-        }
+      watch: function(params, success) {
+        throw 'Implement api-priv-ie.js/cookies.watch'
+      },
+      remove: function (params) {
+          return window.extensions.cookies_remove(params.url, params.name);
+      }
     }
 }
 

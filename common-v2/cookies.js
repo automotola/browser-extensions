@@ -1,14 +1,12 @@
 forge['cookies'] = {
-    'get': function(url, name, success, error) {
-        internal.priv.call("cookies.get", {
-            url: url,
-            name: name
-        }, success, error);
-    },
-    'remove': function(url, name) {
-        internal.priv.call("cookies.remove", {
-            url: url,
-            name: name
-        });
-    }
+  get: function (domain, path, name, success, error) {
+    internal.priv.call("cookies.get", {
+      domain: domain, path: path, name: name
+    }, success, error);
+  },
+  watch: function (domain, path, name, updateCallback) {
+    internal.priv.call("cookies.watch", {
+      domain: domain, path: path, name: name
+    }, updateCallback);
+  }
 };
