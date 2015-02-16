@@ -321,14 +321,21 @@ var apiImpl = {
 	},
   cookies: {
     get: function(p, cb) {
-      chrome.cookies.getAll({domain: p.domain}, cookies => {
-        var cookie = cookies.find(c => p.name == c.name && p.path == c.path)
-        if (cookie) return cb(cookie.value)
+      chrome.cookies.getAll({domain: p.domain}, function(cookies) {
+        for (var i = 0; i < cookies.length; i ++) {
+          var cookie = cookies[i];
+
+          if (p.name == cookie.name && p.path == cookie.path) {
+            cb(cookie.value);
+            return;
+          }
+        }
         cb()
       })
+
     },
     watch: function(p, cb) {
-      chrome.cookies.onChanged.addListener(e => {
+      chrome.cookies.onChanged.addListener(function(e) {
         var c = e.cookie
         if (!c || !c.name || p.path != c.path || p.name != c.name) return
         if (c.domain.indexOf(p.domain) == -1) return

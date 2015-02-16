@@ -88,10 +88,11 @@ def post_create_all_js():
 			'out': 'ie/forge/all.js'
 		}}},
 		{'when': {'platform_is': 'ie'}, 'do': {'concatenate_files': {
-			'in': ('common-v2/cookies.js', 'common-v2/api-priv.js', 'ie/assets_forge/api-proxy.js', 'ie/assets_forge/api-priv-ie.js',),
+			'in': ('common-v2/api-priv.js', 'ie/assets_forge/api-proxy.js', 'ie/assets_forge/api-priv-ie.js',),
 			'out': 'ie/forge/all-priv.js'
 		}}},
 		{'when': {'platform_is': 'firefox'}, 'do': {'add_to_all_js': 'firefox/template-app/data/assets_forge/api-firefox.js'}},
+		{'do': {'add_to_all_js': 'common-v2/cookies.js'}},
 		{'do': {'add_to_all_js': 'common-v2/api-expose.js'}},
 		{'do': {'add_to_all_js': 'common-v2/api-suffix.js'}},
 		{'when': {'platform_is': 'firefox'}, 'do': {'rename_files': {
@@ -103,7 +104,7 @@ def post_create_all_js():
 			'to': 'firefox/template-app/data/forge/api-firefox-proxy.js'
 		}}},
 	]
-	
+
 def remove_assets_forge():
 	return [
 		{'when': {'platform_is': 'chrome'}, 'do': {'remove_files': 'chrome/assets_forge'}},
@@ -114,24 +115,24 @@ def remove_assets_forge():
 
 def platform_specific_templating(build):
 	'Perform any platform specific templating'
-	
+
 	return [
 		{'when': {'platform_is': 'chrome'}, 'do': {'template_files': (
 			'chrome/forge.html',
 			'chrome/manifest.json'
 		)}},
-		
+
 		{'when': {'platform_is': 'firefox'}, 'do': {'template_files': (
 			'firefox/template-app/package.json',
 			'firefox/template-app/lib/main.js',
 			'firefox/template-app/data/forge.html',
 		)}},
-		
+
 		{'when': {'platform_is': 'safari'}, 'do': {'template_files': (
 			'forge.safariextension/forge.html',
 			'forge.safariextension/Info.plist'
 		)}},
-		
+
 		{'when': {'platform_is': 'ie'}, 'do': {'template_files': (
 			'ie/forge.html',
 			'ie/manifest.json',
@@ -142,12 +143,12 @@ def platform_specific_templating(build):
 	]
 
 def minification():
-	return [		
+	return [
 		{'when': {'platform_is': 'chrome', 'is_external': ()}, 'do': {'minify_in_place': (
 			'chrome/forge/all.js',
 			'chrome/forge/all-priv.js',
 		)}},
-		
+
 		{'when': {'platform_is': 'firefox', 'is_external': ()}, 'do': {'minify_in_place': (
 			'firefox/template-app/data/forge/all.js',
 			'firefox/template-app/data/forge/api-firefox-bg.js',
@@ -160,7 +161,7 @@ def minification():
 			'forge.safariextension/forge/all.js',
 			'forge.safariextension/forge/all-priv.js',
 		)}},
-		
+
 		{'when': {'platform_is': 'ie', 'is_external': ()}, 'do': {'minify_in_place': (
 			'ie/forge/all.js',
 			'ie/forge/all-priv.js',
