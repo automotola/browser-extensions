@@ -2,7 +2,7 @@
  * For Chrome.
  */
 
-chrome.extension.onConnect.addListener(function(port) {
+chrome.runtime.onConnect.addListener(function(port) {
 	if (port.name === 'bridge') {
 		port.onMessage.addListener(function(msg) {
 			function handleResult(status) {
@@ -24,6 +24,18 @@ chrome.extension.onConnect.addListener(function(port) {
 				port.postMessage(reply);
 			});
 		});
+	} else if(port.name === 'message:to-priv') {
+
+		port.onMessage.addListener(function(message) {
+
+			var listeners = messageListeners[message.type] || []
+			for (var i = 0; i < listeners.length; i++) {
+				listeners[i] && listeners[i](message.content, function(reply) {
+					// send back reply
+					port.postMessage(reply)
+				})
+			}
+		})
 	}
 });
 
@@ -41,6 +53,8 @@ chrome.extension.onConnect.addListener(function(port) {
  *  its first argument
  * @param {function} error Not used.
  */
+
+var messageListeners = {}
 forge.message.listen = function(type, callback, error)
 {
 	if (typeof(type) === 'function') {
@@ -50,18 +64,8 @@ forge.message.listen = function(type, callback, error)
 		type = null;
 	}
 
-	chrome.extension.onConnect.addListener(function(port) {
-		if (port.name === 'message:to-priv') {
-			port.onMessage.addListener(function(message) {
-				if (type === null || type === message.type) {
-					callback && callback(message.content, function (reply) {
-						// send back reply
-						port.postMessage(reply);
-					});
-				}
-			});
-		}
-	});
+	var listeners = messageListeners[type] = messageListeners[type] || []
+	if(listeners.indexOf(callback)==-1) listeners.push(callback)
 };
 /**
  * Broadcast a message to all non-privileged pages where your extension is active.
@@ -73,17 +77,28 @@ forge.message.listen = function(type, callback, error)
  * @param {function} callback reply function
  * @param {function} error Not used.
  */
+
+var broadcastPorts = {}
 forge.message.broadcast = function(type, content, callback, error) {
 	chrome.windows.getAll({populate: true}, function (windows) {
 		windows.forEach(function (win) {
 			win.tabs.forEach(function (tab) {
 				//skip hosted pages
 				if (tab.url.indexOf('chrome-extension:') != 0) {
-					var port = chrome.tabs.connect(tab.id);
+					var port = broadcastPorts[tab.id]
+					if(!port) {
+						port = broadcastPorts[tab.id] = broadcastPorts[tab.id] || chrome.tabs.connect(tab.id);
+
+						port.onDisconnect.addListener(function() {
+							delete broadcastPorts[tab.id]
+						})
+					}
+
 					if (callback) {
-						port.onMessage.addListener(function (message) {
+						port.onMessage.addListener(function listener(message) {
 							// this is a reply from a recipient non-privileged page
 							callback(message);
+							port.onMessage.removeListener(listener)
 						});
 					}
 					port.postMessage({type: type, content: content});
@@ -91,15 +106,17 @@ forge.message.broadcast = function(type, content, callback, error) {
 			})
 		});
 	});
+
+	var popupPort = chrome.runtime.connect()
 	// Also to popup
-	var port = chrome.extension.connect();
 	if (callback) {
-		port.onMessage.addListener(function(message) {
+		popupPort.onMessage.addListener(function listener(message) {
 			// this is a reply from a recipient non-privileged page
 			callback(message);
+			popupPort.onMessage.removeListener(listener)
 		});
 	}
-	port.postMessage({type: type, content: content});
+	popupPort.postMessage({type: type, content: content});
 }
 
 /**
@@ -122,10 +139,11 @@ var apiImpl = {
 		toFocussed: function(params, callback, error) {
 			chrome.windows.getCurrent(function (win) {
 				chrome.tabs.getSelected(win.id, function (tab) {
-					var port = chrome.tabs.connect(tab.id);
-					port.onMessage.addListener(function (message) {
+					var port = broadcastPorts[tab.id] = broadcastPorts[tab.id] || chrome.tabs.connect(tab.id);
+					port.onMessage.addListener(function listener (message) {
 						// this is a reply from the focussed non-privileged page
 						callback(message);
+						port.onMessage.removeListener(listener)
 					});
 					port.postMessage({type: params.type, content: params.content});
 				});
@@ -315,7 +333,7 @@ var apiImpl = {
 			if (name.indexOf("http://") === 0 || name.indexOf("https://") === 0) {
  				success(name);
 			} else {
-				success(chrome.extension.getURL('src'+(name.substring(0,1) == '/' ? '' : '/')+name));
+				success(chrome.runtime.getURL('src'+(name.substring(0,1) == '/' ? '' : '/')+name));
 			}
 		}
 	},

@@ -12,6 +12,29 @@ var port = chrome.extension.connect({name: 'bridge'});
 port.onMessage.addListener(function (msg) {
 	internal.priv.receive(msg);
 });
+var messageListeners = {}
+
+chrome.extension.onConnect.addListener(function(port) {
+	//don't want to hear anything intended for background
+	if (port.name === 'message:to-priv' ||
+			port.name === 'message:to-non-priv' ||
+			port.name === 'bridge') {
+		return;
+	}
+
+	//if(window.ports.indexOf(port)==-1) window.ports.push(port);
+	//console.log(window.ports, {type: type, name: port.name})
+
+	port.onMessage.addListener(function(message) {
+		var listeners = messageListeners[message.type] || []
+		for (var i = 0; i < listeners.length; i++) {
+			listeners[i] && listeners[i](message.content, function(reply) {
+				// send back reply
+				port.postMessage(reply)
+			})
+		}
+	});
+});
 
 /**
  * Calls native code from JS
@@ -43,6 +66,10 @@ forge.is.chrome = function () {
  * @param {function(*, function(*))=} callback
  * @param {function({message: string}=} error
  */
+window.ports = []
+
+
+
 forge.message.listen = function(type, callback, error) {
 	if (typeof type === 'function') {
 		// no type passed in: shift arguments left one
@@ -51,23 +78,10 @@ forge.message.listen = function(type, callback, error) {
 		type = null;
 	}
 
-	chrome.extension.onConnect.addListener(function(port) {
-		//don't want to hear anything intended for background
-		if (port.name === 'message:to-priv' ||
-				port.name === 'message:to-non-priv' ||
-				port.name === 'bridge') {
-			return;
-		}
+	var listeners = messageListeners[type] = messageListeners[type] || []
+	if(listeners.indexOf(callback)==-1) listeners.push(callback)
 
-		port.onMessage.addListener(function(message) {
-			if (type === null || type === message.type) {
-				callback(message.content, function(reply) {
-					// send back reply
-					port.postMessage(reply);
-				});
-			}
-		});
-	});
+	
 }
 /**
  * Broadcast a message to listeners set up in your background code.
@@ -77,15 +91,16 @@ forge.message.listen = function(type, callback, error) {
  * @param {function(*)=} callback
  * @param {function({message: string}=} error
  */
-forge.message.broadcastBackground = function(type, content, callback, error) {
-	var port = chrome.extension.connect({name:'message:to-priv'});
+ var bgPort = chrome.extension.connect({name:'message:to-priv'});
+forge.message.broadcastBackground = function(type, content, callback, error) { 
 	if (callback) {
-		port.onMessage.addListener(function(message) {
+		bgPort.onMessage.addListener(function listener(message) {
 			// one of the listeners has replied to us
 			callback(message);
+			bgPort.onMessage.removeListener(listener)
 		})
 	}
-	port.postMessage({type: type, content: content});
+	bgPort.postMessage({type: type, content: content});
 };
 /**
  * Broadcast a message to all other pages where your extension is active.
@@ -95,13 +110,15 @@ forge.message.broadcastBackground = function(type, content, callback, error) {
  * @param {function(*)=} callback
  * @param {function({message: string}=} error
  */
+var broadcastPort = chrome.extension.connect({name:'message:to-non-priv'});
 forge.message.broadcast = function(type, content, callback, error) {
-	var port = chrome.extension.connect({name:'message:to-non-priv'});
+	
 	if (callback) {
-		port.onMessage.addListener(function(message) {
+		broadcastPort.onMessage.addListener(function listener(message) {
 			// one of the listeners has replied to us
 			callback(message);
+			broadcastPort.onMessage.removeListener(listener)
 		});
 	}
-	port.postMessage({type: type, content: content});
+	broadcastPort.postMessage({type: type, content: content});
 };
