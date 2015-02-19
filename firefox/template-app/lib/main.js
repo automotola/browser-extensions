@@ -12,6 +12,13 @@ var ss = require("simple-storage");
 if (!ss.storage || !ss.storage.prefs) {
 	ss.storage.prefs = {}
 }
+
+let {Cc, Ci} = require('chrome');
+let querystring = require('sdk/querystring');
+let cookie_service = Cc["@mozilla.org/cookieService;1"].getService(Ci['nsICookieService']);
+let io_service = Cc["@mozilla.org/network/io-service;1"].getService(Ci['nsIIOService']);
+let events = require("sdk/system/events");
+
 var button;
 var workers = [];
 var background;
@@ -322,8 +329,37 @@ var apiImpl = {
 	},
   cookies: {
     get: function(p, cb) {
+      var uri = io_service.newURI('https://' + p.domain + p.path, null, null);
+      var cookies_string = cookie_service.getCookieString(uri, null);
+      var cookie_pairs = querystring.parse(cookies_string, '; ', '=');
+      var cookie_val = cookie_pairs[p.name];
+      cb(cookie_val);
     },
     watch: function(p, cb) {
+      console.log('Watching cookie', p)
+
+      function handleCookie(cookie, type) {
+        if (cookie.host != p.domain || cookie.path != p.path || cookie.name != p.name) return;
+
+        if (type == 'delete') cb();
+        else cb(cookie.value);
+      }
+
+      events.on('cookie-changed', function(e) {
+        console.log('cookie-changed', e);
+
+        switch (e.data) {
+          case 'cleared': return cb();
+          case 'added': return handleCookie(e.subject, 'update');
+          case 'changed': return handleCookie(e.subject, 'update');
+          case 'deleted': return handleCookie(e.subject, 'delete');
+          case 'batch-deleted':
+            var enumerator = e.subject.enumerate();
+            while (enumerator.hasMoreElements())
+              handleCookie(enumerator.getNext());
+            break;
+        }
+      });
     }
   }
 };
