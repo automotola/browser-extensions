@@ -17,7 +17,7 @@ let {Cc, Ci} = require('chrome');
 let querystring = require('sdk/querystring');
 let cookie_service = Cc["@mozilla.org/cookieService;1"].getService(Ci['nsICookieService']);
 let io_service = Cc["@mozilla.org/network/io-service;1"].getService(Ci['nsIIOService']);
-let events = require("sdk/system/events");
+const events = require("sdk/system/events");
 
 var button;
 var workers = [];
@@ -336,30 +336,27 @@ var apiImpl = {
       cb(cookie_val);
     },
     watch: function(p, cb) {
-      console.log('Watching cookie', p)
-
       function handleCookie(cookie, type) {
-        if (cookie.host != p.domain || cookie.path != p.path || cookie.name != p.name) return;
+        if (cookie.path != p.path || cookie.name != p.name) return;
+        if (!cookie.host.endsWith(p.domain)) return;
 
         if (type == 'delete') cb();
         else cb(cookie.value);
       }
 
       events.on('cookie-changed', function(e) {
-        console.log('cookie-changed', e);
-
         switch (e.data) {
           case 'cleared': return cb();
-          case 'added': return handleCookie(e.subject, 'update');
-          case 'changed': return handleCookie(e.subject, 'update');
-          case 'deleted': return handleCookie(e.subject, 'delete');
+          case 'added': return handleCookie(e.subject.QueryInterface(Ci['nsICookie2']), 'update');
+          case 'changed': return handleCookie(e.subject.QueryInterface(Ci['nsICookie2']), 'update');
+          case 'deleted': return handleCookie(e.subject.QueryInterface(Ci['nsICookie2']), 'delete');
           case 'batch-deleted':
-            var enumerator = e.subject.enumerate();
+            var enumerator = e.subject.QueryInterface(Ci['nsIArray']).enumerate();
             while (enumerator.hasMoreElements())
-              handleCookie(enumerator.getNext());
+              handleCookie(enumerator.getNext().QueryInterface(Ci['nsICookie2']));
             break;
         }
-      });
+      }, true);
     }
   }
 };
