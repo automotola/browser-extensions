@@ -15,6 +15,13 @@ chrome.runtime.onConnect.addListener(function(port) {
 					port.postMessage(reply);
 				}
 			}
+
+			//to keep it simple I removed callback
+			//later if we need this we can rewrite this part and support callback
+			if(msg.method == 'message.toFocussed') {
+				apiImpl.message.toFocussed(msg.params)
+				return
+			}
 			internal.priv.call(
 					msg.method, msg.params,
 					handleResult('success'), handleResult('error')
@@ -23,20 +30,22 @@ chrome.runtime.onConnect.addListener(function(port) {
 	} else if(port.name === 'message:to-non-priv') {
 		// Special request from non-priv to pass this message on to other non-priv pages
 		port.onMessage.addListener(function(message) {
-			forge.message.broadcast(message.type, message.content, function (reply) {
-				port.postMessage(reply);
-			});
+			forge.message.broadcast(message.type, message.content)
 		});
 	} else if(port.name === 'message:to-priv') {
-		var id = port.sender.tab.id
-		tabPorts[id] = tabPorts[id] || []
-		tabPorts[id].push(port) //can be several ports - iframes
+		if(port.sender.tab) {
+			var id = port.sender.tab.id
+			tabPorts[id] = tabPorts[id] || []
+			tabPorts[id].push(port) //can be several ports - iframes
 
-		port.onDisconnect.addListener(function() {
-			//console.log('closed port from tab', port.sender.tab.url)
-			var ports = tabPorts[id]
-			ports.splice(ports.indexOf(port), 1)
-		})
+
+			port.onDisconnect.addListener(function() {
+				//console.log('closed port from tab', port.sender.tab.url)
+				var ports = tabPorts[id]
+				ports.splice(ports.indexOf(port), 1)
+			})
+		}
+
 		port.onMessage.addListener(function(message) {			
 			//console.log('got message from tab', message)
 			if(callbacks[message.callid]) {
@@ -99,15 +108,19 @@ forge.message.listen = function(type, callback, error)
 
 var broadcastPorts = {}
 forge.message.broadcast = function(type, content, callback, error) {
+	var callid = forge.tools.UUID(), isCallbackSet = false
+
 	chrome.windows.getAll({populate: true}, function (windows) {
 		windows.forEach(function (win) {
 			win.tabs.forEach(function (tab) {
 				var ports = tabPorts[tab.id]
 				//skip hosted pages
 				if (tab.url.indexOf('chrome-extension:') != -1 || !ports || ports.length==0) return
-				var callid = forge.tools.UUID()
-				if (callback) callbacks[callid] = callback
 				var msg = {type: type, callid: callid, content: content}
+				if(!isCallbackSet && callback) {
+					callbacks[callid] = callback 
+					isCallbackSet = true
+				}
 				//console.log('send message to tab', tab.id, msg)
 				for (var i = 0; i < ports.length; i++) {
 					ports[i].postMessage(msg)
@@ -150,6 +163,7 @@ var apiImpl = {
 			chrome.windows.getCurrent(function (win) {
 				chrome.tabs.getSelected(win.id, function (tab) {
 					var ports = tabPorts[tab.id]
+					if(!ports) return
 					var callid = forge.tools.UUID()
 					if(callback) callbacks[callid] = callback
 					var msg = {type: params.type, callid: callid, content: params.content}
