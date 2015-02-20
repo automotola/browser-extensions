@@ -2,6 +2,9 @@
  * For Chrome.
  */
 
+var callbacks = {},
+tabPorts = {}
+
 chrome.runtime.onConnect.addListener(function(port) {
 	if (port.name === 'bridge') {
 		port.onMessage.addListener(function(msg) {
@@ -25,19 +28,35 @@ chrome.runtime.onConnect.addListener(function(port) {
 			});
 		});
 	} else if(port.name === 'message:to-priv') {
+		var id = port.sender.tab.id
+		tabPorts[id] = tabPorts[id] || []
+		tabPorts[id].push(port) //can be several ports - iframes
 
-		port.onMessage.addListener(function(message) {
+		port.onDisconnect.addListener(function() {
+			//console.log('closed port from tab', port.sender.tab.url)
+			var ports = tabPorts[id]
+			ports.splice(ports.indexOf(port), 1)
+		})
+		port.onMessage.addListener(function(message) {			
+			//console.log('got message from tab', message)
+			if(callbacks[message.callid]) {
+				callbacks[message.callid](message.content)
+				delete callbacks[message.callid]
+			}
 
 			var listeners = messageListeners[message.type] || []
 			for (var i = 0; i < listeners.length; i++) {
 				listeners[i] && listeners[i](message.content, function(reply) {
 					// send back reply
-					port.postMessage(reply)
+					//console.log('send reply', {content: reply, callid: message.callid})
+					port.postMessage({content: reply, callid: message.callid}) // reply to tab 
 				})
 			}
 		})
 	}
 });
+
+
 
 
 /**
@@ -83,40 +102,31 @@ forge.message.broadcast = function(type, content, callback, error) {
 	chrome.windows.getAll({populate: true}, function (windows) {
 		windows.forEach(function (win) {
 			win.tabs.forEach(function (tab) {
+				var ports = tabPorts[tab.id]
 				//skip hosted pages
-				if (tab.url.indexOf('chrome-extension:') != 0) {
-					var port = broadcastPorts[tab.id]
-					if(!port) {
-						port = broadcastPorts[tab.id] = broadcastPorts[tab.id] || chrome.tabs.connect(tab.id);
-
-						port.onDisconnect.addListener(function() {
-							delete broadcastPorts[tab.id]
-						})
-					}
-
-					if (callback) {
-						port.onMessage.addListener(function listener(message) {
-							// this is a reply from a recipient non-privileged page
-							callback(message);
-							port.onMessage.removeListener(listener)
-						});
-					}
-					port.postMessage({type: type, content: content});
+				if (tab.url.indexOf('chrome-extension:') != -1 || !ports || ports.length==0) return
+				var callid = forge.tools.UUID()
+				if (callback) callbacks[callid] = callback
+				var msg = {type: type, callid: callid, content: content}
+				//console.log('send message to tab', tab.id, msg)
+				for (var i = 0; i < ports.length; i++) {
+					ports[i].postMessage(msg)
 				}
 			})
-		});
-	});
+		})
+	})
 
-	var popupPort = chrome.runtime.connect()
-	// Also to popup
-	if (callback) {
-		popupPort.onMessage.addListener(function listener(message) {
-			// this is a reply from a recipient non-privileged page
-			callback(message);
-			popupPort.onMessage.removeListener(listener)
-		});
-	}
-	popupPort.postMessage({type: type, content: content});
+
+	// var popupPort = chrome.runtime.connect()
+	// // Also to popup
+	// if (callback) {
+	// 	popupPort.onMessage.addListener(function listener(message) {
+	// 		// this is a reply from a recipient non-privileged page
+	// 		callback(message);
+	// 		popupPort.onMessage.removeListener(listener)
+	// 	});
+	// }
+	// popupPort.postMessage({type: type, content: content});
 }
 
 /**
@@ -139,13 +149,13 @@ var apiImpl = {
 		toFocussed: function(params, callback, error) {
 			chrome.windows.getCurrent(function (win) {
 				chrome.tabs.getSelected(win.id, function (tab) {
-					var port = broadcastPorts[tab.id] = broadcastPorts[tab.id] || chrome.tabs.connect(tab.id);
-					port.onMessage.addListener(function listener (message) {
-						// this is a reply from the focussed non-privileged page
-						callback(message);
-						port.onMessage.removeListener(listener)
-					});
-					port.postMessage({type: params.type, content: params.content});
+					var ports = tabPorts[tab.id]
+					var callid = forge.tools.UUID()
+					if(callback) callbacks[callid] = callback
+					var msg = {type: params.type, callid: callid, content: params.content}
+					for (var i = 0; i < ports.length; i++) {
+						ports[i].postMessage(msg)
+					}
 				});
 			});
 		}

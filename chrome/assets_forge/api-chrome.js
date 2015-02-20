@@ -4,6 +4,7 @@
  * Chrome specific overrides to the generic Forge api.js
  */
 
+
 /**
  * Set up port through which all content script <-> background app
  * communication will happen
@@ -12,29 +13,32 @@ var port = chrome.extension.connect({name: 'bridge'});
 port.onMessage.addListener(function (msg) {
 	internal.priv.receive(msg);
 });
-var messageListeners = {}
 
-chrome.extension.onConnect.addListener(function(port) {
-	//don't want to hear anything intended for background
-	if (port.name === 'message:to-priv' ||
-			port.name === 'message:to-non-priv' ||
-			port.name === 'bridge') {
-		return;
-	}
 
-	//if(window.ports.indexOf(port)==-1) window.ports.push(port);
-	//console.log(window.ports, {type: type, name: port.name})
+var bgPort = chrome.extension.connect({name:'message:to-priv'});
+var messageListeners = {}, //{'someType': [listener1, ..]}
+	callbacks = {}
 
-	port.onMessage.addListener(function(message) {
+bgPort.onMessage.addListener(function(message) {
+		//console.log('got message from bg', message)
+		//callbacks receive reply from bg
+		if(callbacks[message.callid]) {
+			//console.log('executed callback message')
+			callbacks[message.callid](message.content)
+			delete callbacks[message.callid]
+			return
+		}
+
 		var listeners = messageListeners[message.type] || []
 		for (var i = 0; i < listeners.length; i++) {
 			listeners[i] && listeners[i](message.content, function(reply) {
 				// send back reply
-				port.postMessage(reply)
+				//console.log('sent reply', {content: reply, callid: message.callid})
+				bgPort.postMessage({content: reply, callid: message.callid}) //send reply to bg
 			})
 		}
-	});
-});
+})
+
 
 /**
  * Calls native code from JS
@@ -66,7 +70,6 @@ forge.is.chrome = function () {
  * @param {function(*, function(*))=} callback
  * @param {function({message: string}=} error
  */
-window.ports = []
 
 
 
@@ -81,7 +84,6 @@ forge.message.listen = function(type, callback, error) {
 	var listeners = messageListeners[type] = messageListeners[type] || []
 	if(listeners.indexOf(callback)==-1) listeners.push(callback)
 
-	
 }
 /**
  * Broadcast a message to listeners set up in your background code.
@@ -91,16 +93,11 @@ forge.message.listen = function(type, callback, error) {
  * @param {function(*)=} callback
  * @param {function({message: string}=} error
  */
- var bgPort = chrome.extension.connect({name:'message:to-priv'});
 forge.message.broadcastBackground = function(type, content, callback, error) { 
-	if (callback) {
-		bgPort.onMessage.addListener(function listener(message) {
-			// one of the listeners has replied to us
-			callback(message);
-			bgPort.onMessage.removeListener(listener)
-		})
-	}
-	bgPort.postMessage({type: type, content: content});
+	var callid = forge.tools.UUID()
+	if (callback) callbacks[callid] = callback
+	//console.log('send message to background', {type: type, callid: callid, content: content})
+	bgPort.postMessage({type: type, callid: callid, content: content});
 };
 /**
  * Broadcast a message to all other pages where your extension is active.
@@ -110,15 +107,9 @@ forge.message.broadcastBackground = function(type, content, callback, error) {
  * @param {function(*)=} callback
  * @param {function({message: string}=} error
  */
-var broadcastPort = chrome.extension.connect({name:'message:to-non-priv'});
+var broadcastPort = chrome.extension.connect({name:'message:to-non-priv'})
 forge.message.broadcast = function(type, content, callback, error) {
-	
-	if (callback) {
-		broadcastPort.onMessage.addListener(function listener(message) {
-			// one of the listeners has replied to us
-			callback(message);
-			broadcastPort.onMessage.removeListener(listener)
-		});
-	}
-	broadcastPort.postMessage({type: type, content: content});
+	var callid = forge.tools.UUID()
+	if(callback) callbacks[callid] = callback
+	broadcastPort.postMessage({type: type, callid: callid, content: content});
 };
