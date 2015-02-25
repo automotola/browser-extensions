@@ -46,7 +46,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 			})
 		}
 
-		port.onMessage.addListener(function(message) {			
+		port.onMessage.addListener(function(message) {
 			//console.log('got message from tab', message)
 			if(callbacks[message.callid]) {
 				callbacks[message.callid](message.content)
@@ -58,7 +58,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 				listeners[i] && listeners[i](message.content, function(reply) {
 					// send back reply
 					//console.log('send reply', {content: reply, callid: message.callid})
-					port.postMessage({content: reply, callid: message.callid}) // reply to tab 
+					port.postMessage({content: reply, callid: message.callid}) // reply to tab
 				})
 			}
 		})
@@ -118,7 +118,7 @@ forge.message.broadcast = function(type, content, callback, error) {
 				if (tab.url.indexOf('chrome-extension:') != -1 || !ports || ports.length==0) return
 				var msg = {type: type, callid: callid, content: content}
 				if(!isCallbackSet && callback) {
-					callbacks[callid] = callback 
+					callbacks[callid] = callback
 					isCallbackSet = true
 				}
 				//console.log('send message to tab', tab.id, msg)
@@ -247,6 +247,11 @@ var apiImpl = {
 		}
 	},
 	tabs: {
+    getCurrentTabUrl: function(params, success) {
+      chrome.tabs.getSelected(function(tab) {
+        success(tab.url);
+      });
+    },
 		open: function (params, success, error) {
 			chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
 		},

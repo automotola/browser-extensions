@@ -248,6 +248,9 @@ var apiImpl = {
 		}
 	},
 	tabs: {
+    getCurrentTabUrl: function(params, success) {
+      success(require('tabs').activeTab.url);
+    },
 		open: function(params, success, error) {
 			require('tabs').open({
 				url: params.url,

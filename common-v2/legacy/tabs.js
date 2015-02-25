@@ -33,14 +33,17 @@ var patternToReStr = function (str) {
 	} else {
 		re += host;
 	}
-	
+
 	// Path
 	re += path.replace(/\*/g, '.*');
-	
+
 	return "^"+re+"$";
 };
 
 forge['tabs'] = {
+  getCurrentTabUrl: function(success) {
+    internal.priv.call("tabs.getCurrentTabUrl", { }, success, function() { });
+  },
 	/**
 	 * Open a new browser window, or (on mobile) a modal view.
 	 *
@@ -68,7 +71,7 @@ forge['tabs'] = {
 	 * @param {object} options Options
 	 * @param {function()=} success
 	 * @param {function({message: string}=} error
-	 */	
+	 */
 	'openWithOptions': function (options, success, error) {
 		if (!("url" in options)) {
 			return error({
@@ -81,7 +84,7 @@ forge['tabs'] = {
 		}
 		internal.priv.call("tabs.open", options, success, error);
 	},
-	
+
 	/**
 	 * Close the tab that makes the call, intended to be called from foreground
 	 * @param {function({message: string}=} error
