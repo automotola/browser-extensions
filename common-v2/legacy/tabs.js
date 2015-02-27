@@ -41,8 +41,14 @@ var patternToReStr = function (str) {
 };
 
 forge['tabs'] = {
+  allTabs: function(cb) {
+    internal.priv.call("tabs.allTabs", { }, cb, function() { });
+  },
   getCurrentTabUrl: function(success) {
     internal.priv.call("tabs.getCurrentTabUrl", { }, success, function() { });
+  },
+  reload: function(id,success) {
+    internal.priv.call("tabs.reload", { id: id }, success, function() { });
   },
 	/**
 	 * Open a new browser window, or (on mobile) a modal view.

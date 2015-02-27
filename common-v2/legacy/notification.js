@@ -7,10 +7,11 @@ forge['notification'] = {
 	 * @param {function()=} success
 	 * @param {function({message: string}=} error
 	 */
-	'create': function (title, text, success, error) {
+	'create': function (title, text, iconURL, success, error) {
 		internal.priv.call("notification.create", {
 			title: title,
-			text: text
+			text: text,
+      iconURL: iconURL
 		}, success, error);
 	},
 

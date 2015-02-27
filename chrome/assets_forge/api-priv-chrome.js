@@ -176,23 +176,15 @@ var apiImpl = {
 	},
 	notification: {
 		create: function(params, success, error) {
-			// 0 is PERMISSION_ALLOWED
-			if (window.webkitNotifications.checkPermission() == 0) {
-				var notification = window.webkitNotifications.createNotification(
-						'', // icon
-						params.title,
-						params.text
-				);
-				notification.show();
-				success();
-			} else {
-				error({
-					message: "No permission for notifications, make sure notifications is included in permissions array of the configuration file",
-					type: "UNAVAILABLE"
-				});
-			}
+      chrome.notifications.create('', {
+        type: "basic",
+        title: params.title,
+        message: params.text,
+        iconUrl: params.iconURL
+      }, function(id) {
+        chrome.notifications.onClicked.addListener(success);
+      });
 		}
-
 	},
 	prefs: {
 		get: function (params, success, error) {
@@ -247,6 +239,30 @@ var apiImpl = {
 		}
 	},
 	tabs: {
+    allTabs: function(params, success) {
+      var tabs = [];
+
+      chrome.windows.getAll({populate: true}, function (windows) {
+        windows.forEach(function (win) {
+          win.tabs.forEach(function (tab) {
+              tabs.push({
+                url: tab.url,
+                id: tab.id,
+                title: tab.title
+              });
+            });
+          });
+
+        success(tabs);
+      });
+    },
+    reload: function(params, success) {
+      var code = { code: "window.location.reload(true)" }
+      try {
+        chrome.tabs.executeScript(params.id, code)
+      } catch(e) {
+      }
+    },
     getCurrentTabUrl: function(params, success) {
       chrome.tabs.getSelected(function(tab) {
         success(tab.url);
