@@ -155,9 +155,9 @@ internal.addEventListener = function (event, callback) {
  * Generate query string
  */
 internal.generateQueryString = function (obj) {
-	if (!obj) {
-		return "";
-	}
+	if (typeof obj == 'undefined') return "";
+  if (typeof obj == 'string') return obj;
+
 	if (!(obj instanceof Object)) {
 		return new String(obj).toString();
 	}
