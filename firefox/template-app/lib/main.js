@@ -418,7 +418,12 @@ def get_ba_icon(ba):
 					this.destroy();
 				}
 			});
-			// Keep the panel in the list of workers for messaging
+
+      panel.port.on('winsize', function(data) {
+        panel.resize(data.width, data.height);
+      });
+
+      // Keep the panel in the list of workers for messaging
 			addWorker(panel);
 			panel.show(tbb);
 		}
