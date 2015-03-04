@@ -345,51 +345,50 @@ STDMETHODIMP CNativeExtensions::notification(BSTR icon, BSTR title, BSTR text,
 STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
     IDispatch *success, IDispatch *error)
 {
-	wstring w_url = wstring(url);
-	wstring w_name = wstring(name);
+    wstring w_url = wstring(url);
+    wstring w_name = wstring(name);
     logger->debug(L"NativeExtensions::cookies_get "
         L" -> " + w_url +
         L" -> " + w_name);
 
     if (this->tabId == 0) 
-	{
+    {
         TCHAR* cookieData = new TCHAR[0]; 
         DWORD dwSize = 0;
-		bool deleteCookieData = true;
 
-		if (!InternetGetCookieEx(
-				w_url.c_str(), 
-				w_name.empty() ? NULL : w_name.c_str(), 
-				cookieData, &dwSize, 0, NULL))
+        if (!InternetGetCookieEx(
+                w_url.c_str(), 
+                w_name.empty() ? NULL : w_name.c_str(), 
+                cookieData, &dwSize, 0, NULL))
         {
             if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
             {
                 delete[] cookieData;
-				cookieData = new TCHAR[dwSize];
+                cookieData = new TCHAR[dwSize];
                 // Try the call again.
-				if (InternetGetCookieEx(
-					w_url.c_str(), 
-					w_name.empty() ? NULL : w_name.c_str(), 
-					cookieData, &dwSize, 0, NULL))
+                if (InternetGetCookieEx(
+                    w_url.c_str(), 
+                    w_name.empty() ? NULL : w_name.c_str(), 
+                    cookieData, &dwSize, 0, NULL))
                 {
-					CComVariant param2(cookieData);
-					CComDispatchDriver(success).Invoke1((DISPID)0, &param2);
-					param2.Clear();
+                    CComVariant param2(cookieData);
+                    CComDispatchDriver(success).Invoke1((DISPID)0, &param2);
+                    param2.Clear();
                 }
                 else if (GetLastError() == ERROR_NO_MORE_ITEMS)
                 {
-					CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(L""));
+                    CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(L""));
                 }
                 else
                 {
                     logger->error(L"NativeExtensions::cookies_get failed"
-						L" -> " + w_url +
-						L" -> " + w_name);
+                        L" -> " + w_url +
+                        L" -> " + w_name);
 
                     wstring message = L"Error code: " + std::to_wstring(GetLastError());
                     CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
                 }
-			}
+            }
             else if (GetLastError() == ERROR_NO_MORE_ITEMS)
             {
                 CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(L""));
@@ -397,8 +396,8 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
             else
             {
                 logger->error(L"NativeExtensions::cookies_get failed"
-					L" -> " + w_url +
-					L" -> " + w_name);
+                    L" -> " + w_url +
+                    L" -> " + w_name);
 
                 wstring message = L"Error code: " + std::to_wstring(GetLastError());
                 CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
@@ -406,39 +405,42 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name,
         }
         else
         {
-			CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(L""));
+            CComDispatchDriver(success).Invoke1((DISPID)0, &CComVariant(L""));
         }
-		delete[] cookieData;
-	}
+        delete[] cookieData;
+    }
     else
-	{
+    {
         logger->error(L"NativeExtensions::cookies_get failed"
             L" -> " + w_url +
-			L" -> " + w_name);
+            L" -> " + w_name);
 
         wstring message = L"get cookies only from background page";
         CComDispatchDriver(error).Invoke1((DISPID)0, &CComVariant(message.c_str()));
     }
 
-	return S_OK;
+    return S_OK;
 }
 
 STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_success)
 {
+    wstring w_url = wstring(url);
+    wstring w_name = wstring(name);
+
     logger->debug(L"NativeExtensions::cookies_remove "
-        L" -> " + wstring(url) +
-        L" -> " + wstring(name));
+        L" -> " + w_url +
+        L" -> " + w_name);
 
     if (this->tabId == 0)
     {
-        wstring newCookieData = wstring(name) + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
-        *out_success = InternetSetCookie(W2T(url), NULL, newCookieData.c_str()) ? TRUE : FALSE;
+        wstring newCookieData = w_name + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
+        *out_success = InternetSetCookie(w_url.c_str(), NULL, newCookieData.c_str()) ? TRUE : FALSE;
     }
     else
     {
         logger->error(L"NativeExtensions::cookies_remove failed: tabId != 0"
-            L" -> " + wstring(url) +
-            L" -> " + wstring(name));
+            L" -> " + w_url +
+            L" -> " + w_name);
 
         *out_success = FALSE;
     }
