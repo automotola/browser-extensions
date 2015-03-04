@@ -13,6 +13,8 @@ if (FirefoxMajorVersion <= 32) {
 }
 
 window.addEventListener("update-window-size", function() {
-  var el = document.querySelector('body > div > div');
-  self.port.emit("winsize", {height: el.scrollHeight + 1, width: el.scrollWidth + 12});
+  var el = document.querySelector('body');
+  var data = {width: el.scrollWidth + 1, height: el.scrollHeight + 1};
+  self.port.emit("winsize", data);
+
 }, false);
