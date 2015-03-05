@@ -191,15 +191,15 @@ def set_attribute_value_xml(build, file, value, attribute, element=None):
 		el = xml.getroot()
 	else:
 		el = xml.find(element, dict((v,k) for k,v in ElementTree._namespace_map.items()))
-	
+
 	# set is not aware of namespaces, so we have to replace "namespace" with "{schema}"
 	namespaces = dict((v,k) for k,v in ElementTree._namespace_map.items())
 	if ":" in attribute:
 		parts = attribute.split(":")
 		attribute = "{%s}%s" % (namespaces[parts[0]], parts[1])
-	
+
 	el.set(attribute, utils.render_string(build.config, value))
-	
+
 	xml.write(file)
 
 @task
@@ -213,7 +213,7 @@ def rename_files(build, **kw):
 def copy_files(build, **kw):
 	if 'from' not in kw or 'to' not in kw:
 		raise ConfigurationError('copy_files requires "from" and "to" keyword arguments')
-		
+
 	return _rename_or_copy_files(build, kw['from'], kw['to'], rename=False, ignore_patterns=kw.get('ignore_patterns'))
 
 class Pattern(object):
@@ -275,7 +275,7 @@ def _rename_or_copy_files(build, frm, to, rename=True, ignore_patterns=None):
 		else:
 			# don't glob in case the to path doesn't exist yet
 			tos = [to]
-		
+
 		for found_to in tos:
 			build.log.debug('copying {from_} to {found_to}'.format(**locals()))
 			if path.isdir(from_):
@@ -286,15 +286,15 @@ def _rename_or_copy_files(build, frm, to, rename=True, ignore_patterns=None):
 @task
 def find_and_replace(build, *files, **kwargs):
 	'''replace one string with another in a set of files
-	
-	:param kwargs: must contain ``find`` and ``replace`` keys, 
+
+	:param kwargs: must contain ``find`` and ``replace`` keys,
 	representing the string to look for, and string to replace
 	with, respectively.
-	
+
 	:param kwargs: can also contain the ``template`` boolean
 	argument, which determines if we will run the ``replace``
 	argument through genshi templating first (defaults to True).
-	
+
 	:param files: array of glob patterns to select files
 	:param kwargs: must contain ``find`` and ``replace`` keys
 	'''
@@ -359,7 +359,7 @@ def find_and_replace_in_dir(build, root_dir, find, replace, file_suffixes=("html
 	build.log.debug("replacing {find} with {replace} in {files}".format(
 		find=find, replace=replace, files="{0}/**/*.{1}".format(root_dir, file_suffixes)
 	))
-	
+
 	found_roots = glob.glob(root_dir)
 	if len(found_roots) == 0:
 		build.log.warning('No files were found to match pattern "%s"' % root_dir)
@@ -373,7 +373,7 @@ def find_and_replace_in_dir(build, root_dir, find, replace, file_suffixes=("html
 
 def _replace_in_file(build, filename, find, replace):
 	build.log.debug(u"replacing {find} with {replace} in {filename}".format(**locals()))
-	
+
 	tmp_file = uuid.uuid4().hex
 	in_file_contents = read_file_as_str(filename)
 	in_file_contents = in_file_contents.replace(find, replace)
@@ -381,11 +381,11 @@ def _replace_in_file(build, filename, find, replace):
 		out_file.write(in_file_contents)
 	os.remove(filename)
 	shutil.move(tmp_file, filename)
-	
+
 @task
 def remove_lines_in_file(build, filename, containing):
 	build.log.debug("removing lines containing '{containing}' in {filename}".format(**locals()))
-	
+
 	tmp_file = uuid.uuid4().hex
 	in_file_contents = read_file_as_str(filename)
 	in_file_contents = re.sub(r".*"+re.escape(containing)+r".*\r?\n?", "", in_file_contents)
@@ -397,10 +397,10 @@ def remove_lines_in_file(build, filename, containing):
 @task
 def regex_replace_in_file(build, filename, find, replace, template=False):
 	build.log.debug("regex replace in {filename}".format(**locals()))
-	
+
 	if template:
 		replace = utils.render_string(build.config, replace)
-	
+
 	tmp_file = uuid.uuid4().hex
 	in_file_contents = read_file_as_str(filename)
 	in_file_contents = re.sub(find, replace, in_file_contents)
@@ -413,14 +413,14 @@ def regex_replace_in_file(build, filename, find, replace, template=False):
 def set_in_biplist(build, filename, key, value):
 	# biplist import must be done here, as in the server context, biplist doesn't exist
 	import biplist
-	
+
 	if isinstance(value, str):
 		value = utils.render_string(build.config, value)
-	
+
 	build.log.debug(u"setting {key} to {value} in {files}".format(
 		key=key, value=value, files=filename
 	))
-	
+
 	found_files = glob.glob(filename)
 	if len(found_files) == 0:
 		build.log.warning('No files were found to match pattern "%s"' % filename)
@@ -433,11 +433,11 @@ def set_in_biplist(build, filename, key, value):
 def set_in_json(build, filename, key, value):
 	if isinstance(value, str):
 		value = utils.render_string(build.config, value)
-	
+
 	build.log.debug("setting {key} to {value} in {files}".format(
 		key=key, value=value, files=filename
 	))
-	
+
 	found_files = glob.glob(filename)
 	if len(found_files) == 0:
 		build.log.warning('No files were found to match pattern "%s"' % filename)
@@ -471,11 +471,11 @@ def set_in_config(build, key, value):
 def add_to_json_array(build, filename, key, value):
 	if isinstance(value, str):
 		value = utils.render_string(build.config, value)
-	
+
 	build.log.debug("adding '{value}' to '{key}' in {files}".format(
 		key=key, value=value, files=filename
 	))
-	
+
 	found_files = glob.glob(filename)
 	if len(found_files) == 0:
 		build.log.warning('No files were found to match pattern "%s"' % filename)
@@ -491,9 +491,9 @@ def add_to_json_array(build, filename, key, value):
 @task
 def resolve_urls(build, *url_locations):
 	'''Include "src" prefix for relative URLs, e.g. ``file.html`` -> ``src/file.html``
-	
+
 	``url_locations`` uses::
-	
+
 	* dot-notation to descend into a dictionary
 	* ``[]`` at the end of a field name to denote an array
 	* ``*`` means all attributes on a dictionary
@@ -506,7 +506,7 @@ def resolve_urls(build, *url_locations):
 @task
 def wrap_activations(build, location):
 	'''Wrap user activation code to prevent running in frames if required
-	
+
 	'''
 	if "activations" in build.config['plugins'] and \
 	   "config" in build.config['plugins']['activations'] and \
@@ -523,7 +523,7 @@ def wrap_activations(build, location):
 						out_file.write(in_file_contents)
 					os.remove(filename)
 					shutil.move(tmp_file, filename)
-		
+
 @task
 def populate_icons(build, platform, icon_list):
 	'''
@@ -547,7 +547,7 @@ def populate_icons(build, platform, icon_list):
 
 @task
 def populate_xml_safe_name(build):
-	build.config['xml_safe_name'] = build.config["name"].replace('"', '\\"').replace("'", "\\'")
+	build.config['xml_safe_name'] = build.config["name"].replace('"', '\\"').replace("'", "\\'").replace("&", "&amp;")
 
 @task
 def populate_json_safe_name(build):
@@ -559,9 +559,9 @@ def run_hook(build, **kw):
 		if os.path.isfile(os.path.join('hooks', kw['hook'], file)):
 			cwd = os.getcwd()
 			os.chdir(kw['dir'])
-			
+
 			target = iter(build.enabled_platforms).next()
-			
+
 			# Get the extension
 			ext = os.path.splitext(file)[-1][1:]
 
@@ -578,12 +578,12 @@ def run_hook(build, **kw):
 			elif ext == "sh" and not sys.platform.startswith('win'):
 				build.log.info('Running (shell) hook: '+file)
 				proc = lib.PopenWithoutNewConsole([os.path.join(cwd, 'hooks', kw['hook'], file), target])
-			
+
 			if proc != None:
 				proc.wait()
 
 			os.chdir(cwd)
-			
+
 			if proc != None and proc.returncode != 0:
 				raise ConfigurationError('Hook script exited with a non-zero return code.')
 
@@ -613,7 +613,7 @@ def populate_package_names(build):
 		build.config["core"]["ie"] = {}
 	build.config["core"]["ie"]["package_name"] = ie_tasks._generate_package_name(build)
 
-@task	
+@task
 def populate_trigger_domain(build):
 	try:
 		from forge import build_config
@@ -662,7 +662,7 @@ def run_plugin_build_steps(build, steps_path, src_path, project_path):
 		if os.path.isfile(os.path.join(src_path, filename)):
 			shutil.copy2(os.path.join(src_path, filename), os.path.join(project_path, dest))
 
-	if os.path.isdir(steps_path): 
+	if os.path.isdir(steps_path):
 		plugins = os.listdir(steps_path)
 		for plugin in plugins:
 			build.log.debug("Running local build steps for: %s" % plugin)
