@@ -43,7 +43,7 @@ internal.priv = {
 	call: function (method, params, success, error) {
 		if ((!internal.debug || window.catalystConnected || method === "internal.showDebugWarning") && (callQueue.length == 0 || handlingQueue)) {
 			var callid = forge.tools.UUID();
-			var onetime = true;
+			var onetime = false; // All method could be called back several times
 			// API Methods which can be calledback multiple times
 			if (method === "button.onClicked.addListener" || method === "message.toFocussed") {
 				onetime = false;
@@ -97,9 +97,9 @@ internal.priv = {
 			}
 
 			var callbacks = temporaryAsyncStorage[result.callid];
-			
+
 			var returnValue = (typeof result.content === "undefined" ? null : result.content);
-			
+
 			if (callbacks && callbacks[result.status]) {
 				callbacks[result.status](result.content);
 			}
@@ -140,7 +140,7 @@ internal.priv = {
 				} catch (e) {}
 			}
 		}
-	}	
+	}
 };
 
 internal.addEventListener = function (event, callback) {
@@ -155,13 +155,13 @@ internal.addEventListener = function (event, callback) {
  * Generate query string
  */
 internal.generateQueryString = function (obj) {
-	if (!obj) {
-		return "";
-	}
+	if (typeof obj == 'undefined') return "";
+  if (typeof obj == 'string') return obj;
+
 	if (!(obj instanceof Object)) {
 		return new String(obj).toString();
 	}
-	
+
 	var params = [];
 	var processObj = function (obj, scope) {
 		if (obj === null) {

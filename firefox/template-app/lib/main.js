@@ -62,10 +62,10 @@ var call = function(methodName, params, worker, success, error) {
 	try {
 		strparams = JSON.stringify(params);
 	} catch (e) { }
-	apiImpl.logging.log({
-		message: "Received call to "+methodName+" with parameters: "+strparams,
-		level: 10
-	}, nullFn, nullFn);
+	//apiImpl.logging.log({
+	//	message: "Received call to "+methodName+" with parameters: "+strparams,
+	//	level: 10
+	//}, nullFn, nullFn);
 
 	if (!success) {
 		success = nullFn;
@@ -93,20 +93,20 @@ var call = function(methodName, params, worker, success, error) {
 			try {
 				strargs = JSON.stringify(arguments);
 			} catch (e) { }
-			apiImpl.logging.log({
-				message: 'Call to '+methodName+'('+strparams+') succeeded: '+strargs,
-				level: 10
-			}, nullFn, nullFn);
+			//apiImpl.logging.log({
+				//message: 'Call to '+methodName+'('+strparams+') succeeded: '+strargs,
+				//level: 10
+			//}, nullFn, nullFn);
 			success.apply(this, arguments);
 		}, function() {
 			var strargs = "arguments could not be stringified";
 			try {
 				strargs = JSON.stringify(arguments);
 			} catch (e) { }
-			apiImpl.logging.log({
-				message: 'Call to '+methodName+'('+strparams+') failed: '+strargs,
-				level: 30
-			}, nullFn, nullFn);
+			//apiImpl.logging.log({
+			//	message: 'Call to '+methodName+'('+strparams+') failed: '+strargs,
+			//	level: 30
+			//}, nullFn, nullFn);
 			error.apply(this, arguments);
 		});
 	} catch (e) {
@@ -242,12 +242,34 @@ var apiImpl = {
 		create: function (params, success, error) {
 			require("notifications").notify({
 				title: params.title,
-				text: params.text
+				text: params.text,
+        iconURL: params.iconURL,
+        onClick: success
 			});
-			success();
 		}
 	},
 	tabs: {
+    allTabs: function(params, success) {
+      var tabs = [];
+
+      for (let tab of require('tabs')) {
+        tabs.push({
+          url: tab.url,
+          id: tab.id,
+          title: tab.title
+        });
+      }
+
+      success(tabs);
+    },
+    reload: function(params, success) {
+      for (let tab of require('tabs')) {
+        if (tab.id == params.id) {
+          tab.reload();
+          success();
+        }
+      }
+    },
     getCurrentTabUrl: function(params, success) {
       success(require('tabs').activeTab.url);
     },
@@ -396,7 +418,12 @@ def get_ba_icon(ba):
 					this.destroy();
 				}
 			});
-			// Keep the panel in the list of workers for messaging
+
+      panel.port.on('winsize', function(data) {
+        panel.resize(data.width, data.height);
+      });
+
+      // Keep the panel in the list of workers for messaging
 			addWorker(panel);
 			panel.show(tbb);
 		}

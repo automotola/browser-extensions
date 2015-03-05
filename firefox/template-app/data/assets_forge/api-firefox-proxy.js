@@ -12,3 +12,9 @@ if (FirefoxMajorVersion <= 32) {
 	exportFunction(self.postMessage, unsafeWindow._forge.self, {defineAs:"postMessage", allowCallbacks:true});
 }
 
+window.addEventListener("update-window-size", function() {
+  var el = document.querySelector('body');
+  var data = {width: el.scrollWidth + 1, height: el.scrollHeight + 1};
+  self.port.emit("winsize", data);
+
+}, false);
