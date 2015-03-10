@@ -547,7 +547,7 @@ def populate_icons(build, platform, icon_list):
 
 @task
 def populate_xml_safe_name(build):
-	build.config['xml_safe_name'] = build.config["name"].replace('"', '\\"').replace("'", "\\'").replace("&", "&amp;")
+	build.config['xml_safe_name'] = build.config["name"].replace('"', '\\"').replace("'", "\\'")
 
 @task
 def populate_json_safe_name(build):
