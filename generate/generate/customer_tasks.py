@@ -8,6 +8,7 @@ import shutil
 import sys
 import uuid
 import json
+import cgi
 from copy import copy
 
 from build import ConfigurationError
@@ -547,7 +548,7 @@ def populate_icons(build, platform, icon_list):
 
 @task
 def populate_xml_safe_name(build):
-	build.config['xml_safe_name'] = build.config["name"].replace('"', '\\"').replace("'", "\\'")
+	build.config['xml_safe_name'] = cgi.escape(build.config["name"].replace('"', '\\"').replace("'", "\\'"))
 
 @task
 def populate_json_safe_name(build):

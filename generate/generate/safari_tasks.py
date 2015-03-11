@@ -7,14 +7,13 @@ from lib import task
 LOG = logging.getLogger(__name__)
 
 def _generate_package_name(build):
-	build.config['name'] = cgi.escape(build.config['name'])
 	build.config['description'] = cgi.escape(build.config['description'])
 	if "core" not in build.config:
 		build.config["core"] = {}
 	if "safari" not in build.config["core"]:
 		build.config["core"]["safari"] = {}
 	if "package_name" not in build.config["core"]["safari"]:
-		build.config["core"]["safari"]["package_name"] = "com.safari.{package_name}".format(package_name=build.config["package_name"])
+		build.config["core"]["safari"]["package_name"] = "com.safari.{package_name}".format(package_name=cgi.escape(build.config["package_name"]))
 	return build.config["core"]["safari"]["package_name"]
 
 @task
@@ -34,5 +33,5 @@ More information on packaging Safari extensions can be found here:
 @task
 def run_safari(build):
 	msg = """Currently it is not possible to launch a Safari extension via this interface."""
-	
+
 	LOG.info(msg)
