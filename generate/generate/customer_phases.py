@@ -70,7 +70,7 @@ def include_platform_in_html(debug=False):
 		}}},
 		{'when': {'platform_is': 'safari'}, 'do': {'insert_head_tag': {
 			"root_dir": locations["safari"],
-			"tag": "<script src='%{back_to_parent}%forge/app_config.js'></script><script src='%{back_to_parent}%forge/all.js'></script>"
+			"tag": "<script src='%{back_to_parent}%forge/app_config.js'></script><script src='%{back_to_parent}%forge/all-priv.js'></script>"
 		}}},
 		{'when': {'platform_is': 'ie'}, 'do': {'insert_head_tag': {
 			"root_dir": locations["ie"],

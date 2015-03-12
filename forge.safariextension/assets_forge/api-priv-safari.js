@@ -63,6 +63,16 @@ internal.dispatchMessage = function (msgEvt) {
 	}
 }
 
+safari.application.addEventListener('popover', function(event) {
+    event.target.contentWindow.location.reload();
+}, true);
+
+window.addEventListener("update-window-size", function(e) {
+	safari.self.height = e.detail.height
+	safari.self.width = e.detail.width
+}, false)
+
+
 safari.application.addEventListener("message", internal.dispatchMessage, false);
 
 var safariListen = function (event, cb) {
@@ -238,7 +248,12 @@ var apiImpl = {
 				safari.application.activeBrowserWindow.openTab().url = params.url;
 			}
 			success();
+		},
+		getCurrentTabUrl: function(params, success) {
+			var tab = safari.application.activeBrowserWindow.activeTab
+			if(tab) success(tab.url)
 		}
+
 	},
 	
 	button: {
@@ -363,6 +378,14 @@ var apiImpl = {
 				success(safari.extension.baseURI+('src'+(name.substring(0,1) == '/' ? '' : '/')+name));
 			}
 		}
+	},
+	cookies: {
+	  get: function(p, cb) {
+	  	setTimeout(cb, 10)
+	  },
+	  watch: function(p, cb) {
+	    
+	  }
 	}
 }
 
