@@ -4,53 +4,38 @@
  * Safari specific overrides to the generic Forge api.js
  */
 
-/*
- * Set up listener through which all content script <-> background app
- * communication will happen
- */
+var messageListeners = {},
+	bridgeId = 'forge-bridge' + forge.config.uuid
 
-var msgListeners = {};
+window.__msg = messageListeners
 
-internal.dispatchMessage = function(msgEvt) {
-	// Received all messages, filter by those relevant to this addon
-	if (msgEvt.name == ('forge-bridge'+forge.config.uuid)) {
-		
-		var msg = msgEvt.message;
-		
-		if (msg.method && msg.method === 'message') {
-			// Handle incoming messages
-			if (msgListeners[msg.event]) {
-				msgListeners[msg.event].forEach(function (cb) {
-					cb(msg.data);
-				});
-			}
-		} else {
-			internal.priv.receive(msg);
-		}
-	}
+safari.self.addEventListener("message", onMessage, false);
+
+function onMessage(msgEvt) {
+	if(msgEvt.name != bridgeId) return
+	var msg = msgEvt.message
+	if(msg.method == 'message') {
+		return processMessage(msg)
+	} 
+
+	internal.priv.receive(msg)
 }
 
-safari.self.addEventListener("message", internal.dispatchMessage, false);
+function processMessage(msg) {
+	var event = msg.event,
+		data = msg.data
+
+	var listeners = messageListeners[event]
+	if(!listeners) return
+	listeners.forEach(function(cb) {
+		cb(data)
+	})
+}
+
 
 internal.priv.send = function (data) {
-	if (safari.self.tab) {
-		safari.self.tab.dispatchMessage(('forge-bridge'+forge.config.uuid), JSON.parse(JSON.stringify(data)));
-	} else {
-		// Being called within a popover, call the dispatch function directly
-		safari.extension.globalPage.contentWindow.forge._dispatchMessage({
-			name: ('forge-bridge'+forge.config.uuid),
-			message: data,
-			isPopover: true,
-			callback: function(reply, replyId) {
-				if(replyId && msgListeners[replyId]){
-						msgListeners[replyId].forEach(function (cb) {
-							cb(reply);
-						});
-				}
-				internal.priv.receive(JSON.stringify(reply));
-			}
-		});
-	}
+	if (!safari.self.tab) return
+	safari.self.tab.dispatchMessage(bridgeId, JSON.parse(JSON.stringify(data)))
 };
 
 // Override default implementations for some methods
@@ -61,76 +46,60 @@ forge.is.safari = function () {
 	return true;
 }
 
-// Messaging helper functions
-var safariListen = function (event, cb) {
-	if (msgListeners[event]) {
-		msgListeners[event].push(cb);
-	} else {
-		msgListeners[event] = [cb];
-	}
-};
+
+function listen(type, cb) {
+	var listeners = messageListeners[type] = messageListeners[type] || []
+	if(listeners.indexOf(cb) == -1) listeners.push(cb)
+}
+
+function unlisten(type, cb) {
+	var listeners = messageListeners[type] = messageListeners[type] || [],
+		i = listeners.indexOf(cb)
+	if(i != -1) listeners.splice(i, 1)
+	if(listeners.length == 0) delete messageListeners[type]
+}
+
 var safariBroadcast = function (event, data) {
 	internal.priv.call("message", {event: event, data: data});
-};
+}
+
+function sendToBackground(event, type, content, callback) {
+	var id = forge.tools.UUID()
+	var listener = function(data) {
+		callback(data)
+		unlisten(id, listener)
+	}
+	listen(id, listener)
+	safariBroadcast(event, { type: type, content: content, id: id })
+}
 
 // Override default messaging methods
 forge.message.listen = function (type, callback, error) {
-	if (typeof(type) === 'function')
-	{ // no type passed in: shift arguments left one
+	if (typeof(type) === 'function') {
+	 // no type passed in: shift arguments left one
 		error = callback;
 		callback = type;
 		type = null;
 	}
 	
-	safariListen("broadcast", function(message) {
-		if (type === null || type === message.type) {
+	listen("broadcast", function(message) {
+		if (type !== null && type !== message.type) return
 			callback(message.content, function(reply) {
-				if (message.uuid) {
-					safariBroadcast(message.uuid, reply);
-				}
-			});
-		}
-	});
-};
+				if (!message.id) return
+				safariBroadcast(message.id, reply)
+			})
+	})
+}
+
 forge.message.broadcastBackground = function (type, content, callback, error) {
-	var msgUUID = forge.tools.UUID();
+	sendToBackground('broadcast-background', type, content, callback)
+}
 
-	safariListen(msgUUID, function (data) {
-		callback(data);
-	});
-
-	safariBroadcast('broadcastBackground', {
-		type: type,
-		content: content,
-		uuid: msgUUID
-	});
-};
 forge.message.broadcast = function (type, content, callback, error) {
-	var msgUUID = forge.tools.UUID();
+	sendToBackground('broadcast', type, content, callback)
+}
 
-	safariListen(msgUUID, function (data) {
-		callback(data);
-	});
-
-	safariBroadcast('broadcast', {
-		type: type,
-		content: content,
-		uuid: msgUUID
-	});
-};
 forge.message.toFocussed = function (type, content, callback, error) {
-	var msgUUID = forge.tools.UUID();
+	sendToBackground('toFocussed', type, content, callback)
+}
 
-	//set up reply handler
-	safariListen(msgUUID, function (data) {
-		callback(data);
-	});
-
-	safariBroadcast('toFocussed', {
-		type: type,
-		content: content,
-		uuid: msgUUID
-	});
-};
-
-forge['_dispatchMessage'] = internal.dispatchMessage;
