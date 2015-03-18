@@ -320,6 +320,19 @@ var apiImpl = {
 		},
 		setBadge: function (number, success, error) {
 			var toolbarButton = safari.extension.toolbarItems[0];
+			if(isNaN(parseInt(number))) {
+				var img = toolbarButton.image.split('.'),
+					ext = img.pop(),
+					prefix = number ? '-' + number : ''
+				if(toolbarButton.prevPrefix == prefix) return
+				img = img.join('.')
+				if(toolbarButton.prevPrefix) img = img.split(toolbarButton.prevPrefix)[0]
+				if(prefix) img = img.split(prefix)[0]
+
+				toolbarButton.image =  img + prefix + '.' + ext
+				toolbarButton.prevPrefix = prefix
+				return success()
+			}
 
 			try {
 				toolbarButton.badge = parseInt(number, 10);
