@@ -5,9 +5,10 @@
 
 var messageListeners = {},
 	bridgeId = 'forge-bridge' + forge.config.uuid
+var isPopup = safari.self.toString().indexOf('SafariExtensionPopover')==-1
 
 window.__msg = messageListeners
-if(safari.self.toString().indexOf('SafariExtensionPopover')==-1)
+if(isPopup)
 safari.application.addEventListener('message', onMessage, false)
 
 function onMessage(msgEvt) {
@@ -130,158 +131,19 @@ function sendToTabs(event, data) {
 	})
 }
 
+safari.application.addEventListener('popover', function(event) {
+	var popup = safari.extension.popovers[0]
+	if(popup) {
+		popup.width = 0
+		popup.height = 0
+	}
+  event.target.contentWindow.location.reload();
+}, true);
 
-
-
-
-
-
-
-
-// var msgListeners = {};
-
-// internal.dispatchMessage = function (msgEvt) {
-// 	// Received all messages, filter by those relevant to this extension
-// 	console.log('receive message (dispatchMessage)', JSON.stringify(msgEvt.message))
-// 	if (msgEvt.name === ('forge-bridge'+forge.config.uuid)) {
-// 		var msg = msgEvt.message;
-// 		if (msg.method === 'message') {
-// 			// Handle incoming messages
-// 			if (msg.params.event === 'broadcast' || msg.params.event === 'toFocussed') {
-// 				if (msg.params.data.uuid) {
-// 					safariListen(msg.params.data.uuid, function (reply) {
-// 						if (msgEvt.isPopover) {
-// 							//reply to the popover
-// 							msgEvt.callback(reply, msg.params.data.uuid);
-// 						} else {
-// 							safariBroadcast(msg.params.data.uuid, reply);
-// 						}
-// 					});
-// 				}
-// 				if (msg.params.event === 'broadcast') {
-// 					safariBroadcast('broadcast', msg.params.data, msgEvt.isPopover);
-// 				} else {
-// 					var activeTab = safari.application.activeBrowserWindow.activeTab;
-// 					activeTab.page && activeTab.page.dispatchMessage('forge-bridge'+forge.config.uuid, {method: 'message', event: 'broadcast', data: msg.params.data});
-// 				}
-// 			} else if (msgListeners[msg.params.event]) {
-// 				msgListeners[msg.params.event].forEach(function (cb) {
-// 					cb(msg.params.data);
-// 				});
-// 			}
-// 		} else {
-// 			function handleResult (status) {
-// 				return function (content) {
-// 					// create and send response message
-// 					var reply = {
-// 						callid: msg.callid,
-// 						status: status, 
-// 						content: content
-// 					};
-// 					if (msgEvt.isPopover) {
-// 						// reply to popover if that's the source
-// 						msgEvt.callback(reply);
-// 					} else {
-// 						// send to tabs
-// 						console.log('send priv message to tabs', JSON.stringify(reply))
-// 						safari.application.browserWindows.forEach(function (win) {
-// 							win.tabs.forEach(function (tab) {
-// 								tab.page && tab.page.dispatchMessage(('forge-bridge'+forge.config.uuid), reply);
-// 							});
-// 						});
-// 					}
-// 				};
-// 			}
-// 			internal.priv.call(
-// 				msg.method, msg.params,
-// 				handleResult('success'), handleResult('error')
-// 			);
-// 		}
-// 	}
-// }
-
-// safari.application.addEventListener('popover', function(event) {
-//     event.target.contentWindow.location.reload();
-// }, true);
-
-// window.addEventListener("update-window-size", function(e) {
-// 	safari.self.height = e.detail.height
-// 	safari.self.width = e.detail.width
-// }, false)
-
-
-// if(safari.self.toString().indexOf("SafariExtensionPopover")==-1)
-// safari.application.addEventListener("message", internal.dispatchMessage, false);
-
-// var safariListen = function (event, cb) {
-// 	if (msgListeners[event]) {
-// 		msgListeners[event].push(cb);
-// 	} else {
-// 		msgListeners[event] = [cb];
-// 	}
-// };
-
-// var safariBroadcast = function (event, data, isPopover) {
-// 	// send to tabs
-// 	console.log('send priv message (broadcast)', JSON.stringify(event), JSON.stringify(data))
-// 	safari.application.browserWindows.forEach(function(win) {
-// 		win.tabs.forEach(function(tab) {
-// 			tab.page && tab.page.dispatchMessage('forge-bridge'+forge.config.uuid, {method: "message", event: event, data: data});
-// 		});
-// 	});
-// 	if (!isPopover) {
-// 		safari.extension.popovers.forEach(function(popWin) {
-// 			popWin.contentWindow.forge && popWin.contentWindow.forge._dispatchMessage({
-// 				name: ('forge-bridge'+forge.config.uuid), 
-// 				message: {
-// 					method: "message", 
-// 					event: event, 
-// 					data: data}
-// 			});
-// 		});
-// 	}
-// };
-
-// forge.message.listen = function (type, callback, error) {
-// 	if (typeof type === 'function') {
-// 		// no type passed in: shift arguments left one
-// 		error = callback;
-// 		callback = type;
-// 		type = null;
-// 	}
-	
-// 	safariListen("broadcastBackground", function (message) {
-// 		if (type === null || type === message.type) {
-// 			callback(message.content, function(reply) {
-// 				if (message.uuid) {
-// 					safariBroadcast(message.uuid, reply);
-// 				}
-// 			});
-// 		}
-// 	});
-// };
-// forge.message.broadcast = function (type, content, callback, error) {
-// 	var msgUUID = forge.tools.UUID();
-// 	safariBroadcast('broadcast', {
-// 		type: type,
-// 		content: content,
-// 		uuid: msgUUID
-// 	});
-// 	safariListen(msgUUID, function (data) {
-// 		callback(data);
-// 	});
-// };
-// forge.message.toFocussed = function (type, content, callback,error) {
-// 	var msgUUID = forge.tools.UUID();
-// 	var data = {type: type,	content: content, uuid: msgUUID};
-// 	var activeTab = safari.application.activeBrowserWindow.activeTab;
-
-// 	activeTab.page && activeTab.page.dispatchMessage('forge-bridge'+forge.config.uuid, {method: "message", event: 'broadcast', data: data});
-
-// 	safariListen(msgUUID, function (data) {
-// 		callback(data);
-// 	});
-// };
+window.addEventListener("update-window-size", function(e) {
+	safari.self.height = e.detail.height
+	safari.self.width = e.detail.width
+}, false)
 
 forge.is.desktop = function() {
 	return true;
