@@ -423,6 +423,10 @@ def get_ba_icon(ba):
         panel.resize(data.width, data.height);
       });
 
+      require("tabs").on('open', function() {
+        panel && panel.hide();
+      });
+
       // Keep the panel in the list of workers for messaging
 			addWorker(panel);
 			panel.show(tbb);
