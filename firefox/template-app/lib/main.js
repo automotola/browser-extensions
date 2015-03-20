@@ -7,6 +7,7 @@ var pageMod = require("page-mod");
 var data = require("self").data;
 var request = require("request");
 var notif = require("notifications");
+var ui = require("sdk/ui");
 
 var ss = require("simple-storage");
 if (!ss.storage || !ss.storage.prefs) {
@@ -132,70 +133,29 @@ var apiImpl = {
 		});
 	},
 	button: {
-		setIcon: function (url, success, error) {
-			if (button) {
-				button.update({
-					icon: url
-				});
-				success()
-			} else {
-				error({message: 'Button does not exist', type: "UNAVAILABLE"});
-			}
-		},
-		setURL: function (url, success, error) {
-			if (button) {
-				if (url && url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
-					url = require("self").data.url('src'+(url.substring(0,1) == '/' ? '' : '/')+url);
-				}
-
-				button.update({
-					url: url
-				});
-				success();
-			} else {
-				error({message: 'Button does not exist', type: "UNAVAILABLE"});
-			}
-		},
-		setTitle: function (title, success, error) {
-			if (button) {
-				button.update({
-					title: title
-				});
-				success();
-			} else {
-				error({message: 'Button does not exist', type: "UNAVAILABLE"});
-			}
-		},
-		setBadge: function (badgeText, success, error) {
-			if (button) {
-				button.update({
-					badgeText: badgeText
-				});
-				success();
-			} else {
-				error({message: 'Button does not exist', type: "UNAVAILABLE"});
-			}
-		},
-		setBadgeBackgroundColor: function (badgeBGColor, success, error) {
-			if (button) {
-				button.update({
-					badgeBGColor: badgeBGColor
-				});
-				success();
-			} else {
-				error({message: 'Button does not exist', type: "UNAVAILABLE"});
-			}
-		},
-		onClicked: {
-			addListener: function (params, callback, error) {
-				if (button) {
-					button.addListener(callback);
-					apiImpl.button.setURL('');
-				} else {
-					error({message: 'Button does not exist', type: "UNAVAILABLE"});
-				}
-			}
-		}
+    setIcon: function (url, success, error) {
+      error({message: 'Not implemented', type: "UNAVAILABLE"});
+    },
+    setURL: function (url, success, error) {
+      error({message: 'Not implemented', type: "UNAVAILABLE"});
+    },
+    setTitle: function (title, success, error) {
+      error({message: 'Not implemented', type: "UNAVAILABLE"});
+    },
+    setBadge: function (badgeText, success, error) {
+      if (button) {
+        button.badge = badgeText
+        success();
+      }
+    },
+    setBadgeBackgroundColor: function (badgeBGColor, success, error) {
+      error({message: 'Not implemented', type: "UNAVAILABLE"});
+    },
+    onClicked: {
+      addListener: function (params, callback, error) {
+        error({message: 'Not implemented', type: "UNAVAILABLE"});
+      }
+    }
 	},
 	logging: {
 		log: function (params, success, error) {
@@ -390,34 +350,22 @@ var apiImpl = {
 exports.main = function(options, callbacks) {
 	// Button
 	{% if "button" in plugins and "config" in plugins["button"] %}
-	button = require("toolbarbutton").ToolbarButton({
-		id: config.uuid+"-button"
-		{% if "default_title" in plugins["button"]["config"] %}, title: ${json.dumps(plugins['button']["config"]['default_title'])}{% end %}
-{% python
-def get_ba_icon(ba):
-	if 'firefox' in ba.get('default_icons', {}):
-		return ba['default_icons']['firefox']
-	if 'default_icon' in ba:
-		return ba['default_icon']
-	return False
-%}
-		{% if get_ba_icon(plugins['button']['config']) %}, icon: data.url(${json.dumps(get_ba_icon(plugins['button']['config']))}){% end %}
-		{% if "default_popup" in plugins['button']['config'] %}, url: data.url(${json.dumps(plugins['button']['config']['default_popup'])}){% end %}
-	});
-	button.addListener(function (options, tbb) {
-		if (options.url) {
-			// Create and destroy popups on demand (like Chrome)
-			var panel = require("panel").Panel({
-				contentURL: options.url,
-				contentScriptFile: data.url("forge/api-firefox-proxy.js"),
-				contentScriptWhen: "start",
-				onMessage: handleNonPrivCall,
-				onHide: function () {
-					removeWorker(this);
-					// Completely remove panel from DOM
-					this.destroy();
-				}
-			});
+  button = ui.ActionButton({
+		id: config.id + "-button"
+		{% if "default_title" in plugins["button"]["config"] %}, label: ${json.dumps(plugins['button']["config"]['default_title'])}{% end %}
+		, icon: <%=JSON.stringify(_.mapValues(config.modules.icons.firefox, function(v) { return './src/' + v; }))%>,
+    onClick: function(state) {
+      var panel = require("panel").Panel({
+        contentURL: data.url("src/popup.html"),
+        contentScriptFile: data.url("forge/api-firefox-proxy.js"),
+        contentScriptWhen: "start",
+        onMessage: handleNonPrivCall,
+        onHide: function () {
+          removeWorker(this);
+          // Completely remove panel from DOM
+          this.destroy();
+        }
+      });
 
       panel.port.on('winsize', function(data) {
         panel.resize(data.width, data.height);
@@ -428,10 +376,10 @@ def get_ba_icon(ba):
       });
 
       // Keep the panel in the list of workers for messaging
-			addWorker(panel);
-			panel.show(tbb);
-		}
-	}, true);
+      addWorker(panel);
+      panel.show({position: button});
+    }
+	});
 	{% end %}
 
 	// Background page
