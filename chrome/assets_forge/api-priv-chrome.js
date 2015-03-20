@@ -180,9 +180,10 @@ var apiImpl = {
         type: "basic",
         title: params.title,
         message: params.text,
-        iconUrl: params.iconURL
+        iconUrl: params.iconURL,
+        buttons: params.buttons
       }, function(id) {
-        chrome.notifications.onClicked.addListener(success);
+        success && chrome.notifications.onButtonClicked.addListener(success);
       });
 		}
 	},
