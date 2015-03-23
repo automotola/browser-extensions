@@ -44,17 +44,19 @@ function processMessage(msg) {
 		id = data && data.id
 
 	if (event == 'broadcast' || event == 'toFocussed') {
-		if (id) {
-			var listener = function(reply) {
-				sendToTabs(id, reply)
-				unlisten(id, listener)
-			}
-			listen(id, listener)
-		}
+		//we dont need reply for broadcast from tabs
+		// if (id) {
+		// 	var listener = function(reply) {
+		// 		sendToTabs(id, reply)
+		// 		unlisten(id, listener)
+		// 	}
+		// 	listen(id, listener)
+		// }
 		if (event == 'broadcast') {
 			sendToTabs('broadcast', data)
 		} else {
-			var activeTab = safari.application.activeBrowserWindow.activeTab;
+
+			var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab;
 			activeTab.page && activeTab.page.dispatchMessage(bridgeId, {method: 'message', event: 'broadcast', data: msg.params.data})
 		}		
 		return
@@ -87,25 +89,29 @@ forge.message.listen = function(type, callback, error) {
 
 forge.message.broadcast = function (type, content, callback, error) {
 	var id = forge.tools.UUID()
-	var listener = function(data) {
-		callback(data)
-		unlisten(id, listener)
+	if(callback) {
+		var listener = function(data) {
+			callback(data)
+			unlisten(id, listener)
+		}
+		listen(id, listener)
 	}
-	listen(id, listener)
 	sendToTabs('broadcast', {type: type, content: content, id: id})
 }
 
 forge.message.toFocussed = function (type, content, callback,error) {
-	var activeTab = safari.application.activeBrowserWindow.activeTab
+	var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
 	if(!activeTab.page) return 
 	var id = forge.tools.UUID()
 
-	var listener = function(data) {
-		callback(data)
-		unlisten(id, listener)
-	}
+	if(callback) {
+		var listener = function(data) {
+			callback(data)
+			unlisten(id, listener)
+		}
 
-	listen(id, listener)
+		listen(id, listener)
+	}
 	var data = {type: type,	content: content, id: id}
 	activeTab.page.dispatchMessage(bridgeId, {method: 'message', event: 'broadcast', data: data})
 
@@ -251,7 +257,7 @@ var apiImpl = {
 			success();
 		},
 		getCurrentTabUrl: function(params, success) {
-			var tab = safari.application.activeBrowserWindow.activeTab
+			var tab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
 			if(tab) success(tab.url)
 		}
 
