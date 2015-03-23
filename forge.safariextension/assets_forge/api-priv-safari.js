@@ -151,6 +151,10 @@ window.addEventListener("update-window-size", function(e) {
 	safari.self.width = e.detail.width
 }, false)
 
+window.addEventListener("close-popup", function(e) {
+	safari.self.hide()
+}, false)
+
 forge.is.desktop = function() {
 	return true;
 };
