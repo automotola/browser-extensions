@@ -80,6 +80,12 @@ var jetpackListen = function (event, cb) {
 		msgListeners[event] = [cb];
 	}
 };
+var unlisten = function(event, cb) {
+  var listeners = msgListeners[event] = msgListeners[event] || [],
+    i = listeners.indexOf(cb)
+  if (i != -1) listeners.splice(i, 1)
+  if (listeners.length == 0) delete msgListeners[event]
+}
 var jetpackBroadcast = function (event, data) {
 	internal.priv.call("message", {event: event, data: data});
 };
@@ -112,9 +118,14 @@ forge.message = {
 			content: content,
 			uuid: msgUUID
 		});
-		jetpackListen(msgUUID, function (data) {
-			callback(data);
-		});
+    if (callback) {
+      var listener = function (data) {
+        callback(data);
+        unlisten(msgUUID, listener)
+      };
+
+      jetpackListen(msgUUID, listener);
+    }
 	},
 	broadcast: function(type, content, callback, error) {
 		var msgUUID = forge.tools.UUID();
@@ -123,9 +134,14 @@ forge.message = {
 			content: content,
 			uuid: msgUUID
 		});
-		jetpackListen(msgUUID, function (data) {
-			callback(data);
-		});
+    if (callback) {
+      var listener = function (data) {
+        callback(data);
+        unlisten(msgUUID, listener)
+      };
+
+      jetpackListen(msgUUID, listener);
+    }
 	},
 	toFocussed: function(type, content, callback, error) {
 		var msgUUID = forge.tools.UUID();
@@ -134,9 +150,14 @@ forge.message = {
 			content: content,
 			uuid: msgUUID
 		});
-		jetpackListen(msgUUID, function (data) {
-			callback(data);
-		});
+    if (callback) {
+      var listener = function (data) {
+        callback(data);
+        unlisten(msgUUID, listener)
+      };
+
+      jetpackListen(msgUUID, listener);
+    }
 	}
 }
 

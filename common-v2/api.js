@@ -43,9 +43,9 @@ internal.priv = {
 	call: function (method, params, success, error) {
 		if ((!internal.debug || window.catalystConnected || method === "internal.showDebugWarning") && (callQueue.length == 0 || handlingQueue)) {
 			var callid = forge.tools.UUID();
-			var onetime = false; // All method could be called back several times
+			var onetime = true; // All method could be called back several times
 			// API Methods which can be calledback multiple times
-			if (method === "button.onClicked.addListener" || method === "message.toFocussed") {
+			if (method === "button.onClicked.addListener" || method === "message.toFocussed" || method == "cookies.watch") {
 				onetime = false;
 			}
 			if (success || error) {
