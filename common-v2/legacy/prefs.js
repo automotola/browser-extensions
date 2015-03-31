@@ -19,7 +19,7 @@ forge['prefs'] = {
 					error({
 						message: e.toString()
 					});
-					return;
+					// return;
 				}
 			}
 			success(value);
