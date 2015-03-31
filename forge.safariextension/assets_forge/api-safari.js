@@ -65,11 +65,13 @@ var safariBroadcast = function (event, data) {
 
 function sendToBackground(event, type, content, callback) {
 	var id = forge.tools.UUID()
-	var listener = function(data) {
-		callback(data)
-		unlisten(id, listener)
+	if(callback) {
+		var listener = function(data) {
+			callback(data)
+			unlisten(id, listener)
+		}
+		listen(id, listener)
 	}
-	listen(id, listener)
 	safariBroadcast(event, { type: type, content: content, id: id })
 }
 

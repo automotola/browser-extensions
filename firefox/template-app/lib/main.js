@@ -9,10 +9,7 @@ var request = require("request");
 var notif = require("notifications");
 var ui = require("sdk/ui");
 
-var ss = require("simple-storage");
-if (!ss.storage || !ss.storage.prefs) {
-	ss.storage.prefs = {}
-}
+var ss = require('sdk/simple-prefs');
 
 let {Cc, Ci} = require('chrome');
 let querystring = require('sdk/querystring');
@@ -287,24 +284,25 @@ var apiImpl = {
 	},
 	prefs: {
 		get: function(params, success, error) {
-			success(ss.storage.prefs[params.key] === undefined ? "undefined" : ss.storage.prefs[params.key]);
+			//success(ss.storage.prefs[params.key] === undefined ? "undefined" : ss.storage.prefs[params.key]);
+			success(ss.prefs[params.key] === undefined ? "undefined" : ss.prefs[params.key]);
 		},
 		set: function(params, success, error) {
-			ss.storage.prefs[params.key] = params.value
+			ss.prefs[params.key] = params.value
 			success();
 		},
 		keys: function(params, success, error) {
-			success(Object.keys(ss.storage.prefs));
+			success(Object.keys(ss.prefs));
 		},
 		all: function(params, success, error) {
-			success(ss.storage.prefs);
+			success(ss.prefs);
 		},
 		clear: function(params, success, error) {
-			delete ss.storage.prefs[params.key];
+			delete ss.prefs[params.key];
 			success();
 		},
 		clearAll: function(params, success, error) {
-			success(ss.storage.prefs = {});
+      error({message: 'Not implemented', type: "UNAVAILABLE"});
 		}
 	},
 	file: {
