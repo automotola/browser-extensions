@@ -9,7 +9,7 @@ var messageListeners = {},
 
 window.__msg = messageListeners
 
-safari.self.addEventListener("message", onMessage, false);
+if(window.safari) window.safari.self.addEventListener("message", onMessage, false);
 
 function onMessage(msgEvt) {
 	if(msgEvt.name != bridgeId) return
