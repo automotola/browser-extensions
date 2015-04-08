@@ -17,7 +17,7 @@ function onMessage(msgEvt) {
 	//public method call or broadcast
 	if(msg.method == 'message') {
 		return processMessage(msg)
-	} 
+	}
 
 	function handleResult (status) {
 		return function (content) {
@@ -58,7 +58,7 @@ function processMessage(msg) {
 
 			var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab;
 			activeTab.page && activeTab.page.dispatchMessage(bridgeId, {method: 'message', event: 'broadcast', data: msg.params.data})
-		}		
+		}
 		return
 	}
 
@@ -81,7 +81,7 @@ forge.message.listen = function(type, callback, error) {
 	listen('broadcast-background', function(message) {
 		if (type !== null && type !== message.type) return
 		callback(message.content, function(reply) {
-			if (!message.id) return 
+			if (!message.id) return
 			sendToTabs(message.id, reply)
 		})
 	})
@@ -101,7 +101,7 @@ forge.message.broadcast = function (type, content, callback, error) {
 
 forge.message.toFocussed = function (type, content, callback,error) {
 	var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
-	if(!activeTab.page) return 
+	if(!activeTab.page) return
 	var id = forge.tools.UUID()
 
 	if(callback) {
@@ -214,11 +214,11 @@ var apiImpl = {
 			success(window.localStorage.clear());
 		}
 	},
-	
+
 	request: {
 		/**
 		 * Implementation of api.ajax
-		 * 
+		 *
 		 * success and error callbacks are taken from positional arguments,
 		 * not from the options.success and options.error values.
 		 */
@@ -228,7 +228,7 @@ var apiImpl = {
 			params.success = success;
 			params.error = function(xhr, status, err) {
 				error({
-					message: 'api.ajax with ' + JSON.stringify(params) + 'failed. ' + status + ': ' + err, 
+					message: 'api.ajax with ' + JSON.stringify(params) + 'failed. ' + status + ': ' + err,
 					type: "EXPECTED_FAILURE",
 					statusCode: xhr.status
 				});
@@ -251,14 +251,15 @@ var apiImpl = {
 			}
 		},
 		open: function (params, success, error) {
-			if (params.keepFocus) {
-				var currentTab = safari.application.activeBrowserWindow.activeTab;
-				safari.application.activeBrowserWindow.openTab().url = params.url;
-				currentTab.activate();
-			} else {
-				safari.application.activeBrowserWindow.openTab().url = params.url;
-			}
-			success();
+
+      var currentTab = safari.application.activeBrowserWindow.activeTab;
+      var tab = safari.application.activeBrowserWindow.openTab();
+
+      tab.addEventListener("close", success, false);
+
+      tab.url = params.url;
+
+      if (params.keepFocus) currentTab.activate();
 		},
 		getCurrentTabUrl: function(params, success) {
 			var tab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
@@ -266,11 +267,11 @@ var apiImpl = {
 		}
 
 	},
-	
+
 	button: {
 		setIcon: function (url, success, error) {
 			var toolbarButton = safari.extension.toolbarItems[0];
-			
+
 			if (toolbarButton) {
 				toolbarButton.image = url;
 				success();
@@ -325,7 +326,7 @@ var apiImpl = {
 				toolbarButton.popover = safari.extension.createPopover(forge.tools.UUID(), url);
 				toolbarButton.command = null;
 			}
-			
+
 			success();
 		},
 		setBadge: function (number, success, error) {
@@ -361,7 +362,7 @@ var apiImpl = {
 			success();
 		}
 	},
-	
+
 	logging: {
 		log: function (params, success, error) {
 			if (typeof console !== "undefined") {
@@ -408,7 +409,7 @@ var apiImpl = {
 	  	setTimeout(cb, 10)
 	  },
 	  watch: function(p, cb) {
-	    
+
 	  }
 	}
 }
