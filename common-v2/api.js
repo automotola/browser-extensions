@@ -61,12 +61,7 @@ internal.priv = {
 				params: params
 			};
 			internal.priv.send(call);
-			if (window._forgeDebug) {
-				try {
-					call.start = (new Date().getTime()) / 1000.0;
-					window._forgeDebug.forge.APICall.apiRequest(call);
-				} catch (e) {}
-			}
+			
 		} else {
 			callQueue.push(arguments);
 			if (!callQueueTimeout) {
@@ -95,7 +90,6 @@ internal.priv = {
 			if (typeof temporaryAsyncStorage[result.callid] === undefined) {
 				forge.log("Nothing stored for call ID: " + result.callid);
 			}
-
 			var callbacks = temporaryAsyncStorage[result.callid];
 
 			var returnValue = (typeof result.content === "undefined" ? null : result.content);
@@ -103,16 +97,12 @@ internal.priv = {
 			if (callbacks && callbacks[result.status]) {
 				callbacks[result.status](result.content);
 			}
+			
 			if (callbacks && callbacks.onetime) {
 				// Remove used callbacks
 				delete temporaryAsyncStorage[result.callid];
 			}
-			if (window._forgeDebug) {
-				try {
-					result.end = (new Date().getTime()) / 1000.0;
-					window._forgeDebug.forge.APICall.apiResponse(result);
-				} catch (e) {}
-			}
+
 		} else if (result.event) {
 			// Handle an event
 			if (internal.listeners[result.event]) {
@@ -133,12 +123,7 @@ internal.priv = {
 					}
 				})
 			}
-			if (window._forgeDebug) {
-				try {
-					result.start = (new Date().getTime()) / 1000.0;
-					window._forgeDebug.forge.APICall.apiEvent(result);
-				} catch (e) {}
-			}
+			
 		}
 	}
 };
