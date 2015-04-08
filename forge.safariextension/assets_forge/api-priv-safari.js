@@ -251,11 +251,10 @@ var apiImpl = {
 			}
 		},
 		open: function (params, success, error) {
-
       var currentTab = safari.application.activeBrowserWindow.activeTab;
       var tab = safari.application.activeBrowserWindow.openTab();
 
-      tab.addEventListener("close", success, false);
+      tab.addEventListener("navigate", success, false);
 
       tab.url = params.url;
 
