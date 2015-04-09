@@ -23,6 +23,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     ::GetModuleFileName(instance, buf, MAX_PATH);
     _AtlModule.moduleExec = bfs::wpath(buf);
     _AtlModule.modulePath = bfs::wpath(buf).parent_path();
+    
+    // initialize logger 
+    logger->initialize(_AtlModule.modulePath);
 
     // save calling process
     ::GetModuleFileName(NULL, buf, MAX_PATH);
@@ -51,8 +54,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
         logger->debug(L"BHO::DllMain(DLL_PROCESS_ATTACH) registering");
     }
 
-    // initialize logger 
-    logger->initialize(_AtlModule.modulePath);
     logger->debug(L"BHO::DllMain"
                   L" -> " + boost::lexical_cast<wstring>(instance) +
                   L" -> " + boost::lexical_cast<wstring>(reason) +
