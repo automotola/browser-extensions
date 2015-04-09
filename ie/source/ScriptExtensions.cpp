@@ -15,9 +15,9 @@ ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
     logger->debug(L"ScriptExtensions::ScriptExtensions"
                   L" -> " + path.wstring() +
                   L" -> " + boost::lexical_cast<wstring>(reload));
-    if (reload) {
-        this->Reload();
-    }
+    
+    if (reload)
+        Reload();
 }
 
 
@@ -27,30 +27,30 @@ ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
 void ScriptExtensions::Reload()
 {
     // read manifest.json
-    this->manifest = this->ParseManifest(this->pathManifest);
-    if (!this->manifest) {
+    manifest = ParseManifest(pathManifest);
+    if (!manifest) {
         logger->debug(L"ScriptExtensions::Reload could not load manifest: " + 
-                      this->pathManifest.wstring());
+                      pathManifest.wstring());
         // TODO user-visible error please
         // TODO exit BHO cleanly
         return;
     }
-    this->manifest->dump();
+    manifest->dump();
 
     // cache background_page
-    bfs::wpath path = m_path / this->manifest->background_page;
+    bfs::wpath path = m_path / manifest->background_page;
     if (!bfs::exists(path)) {
         logger->error(L"ScriptExtensions::Reload background_page not found: " +
                       path.wstring());
     }
     std::wifstream stream(path.wstring());
-    this->background_page = 
+    background_page = 
         wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
                                    (std::istreambuf_iterator<wchar_t>())));    
 
     // cache content_scripts & styles
-    Manifest::ContentScripts::const_iterator script = this->manifest->content_scripts.begin();
-    for (; script != this->manifest->content_scripts.end(); script++) {
+    Manifest::ContentScripts::const_iterator script = manifest->content_scripts.begin();
+    for (; script != manifest->content_scripts.end(); script++) {
         wstringvector::const_iterator name = script->js.begin();
         for (; name != script->js.end(); name++) {
             bfs::wpath path = m_path / *name;

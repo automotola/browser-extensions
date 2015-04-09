@@ -46,14 +46,14 @@ Accessible::vector Accessible::children()
     HRESULT hr;
     Accessible::vector ret;
 
-    if (!this->iaccessible) {
+    if (!iaccessible) {
         logger->error(L"Accessible::children invalid IAccessible");
         return ret;
     }
 
     // count children
     long count;
-    hr = this->iaccessible->get_accChildCount(&count);
+    hr = iaccessible->get_accChildCount(&count);
     if (FAILED(hr)) {
         logger->debug(L"Accessible::children failed to get child count"
                       L" -> " + logger->parse(hr));
@@ -63,7 +63,7 @@ Accessible::vector Accessible::children()
     // get accessors
     CComVariant* accessors = new CComVariant[count];
     long countObtained;
-    hr = ::AccessibleChildren(this->iaccessible, 0, count,
+    hr = ::AccessibleChildren(iaccessible, 0, count,
                               accessors, &countObtained);
     if (FAILED(hr)) {
         logger->debug(L"Accessible::children failed to get accessors"

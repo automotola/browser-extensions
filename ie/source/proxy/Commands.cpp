@@ -9,14 +9,14 @@
 HRESULT button_addCommand::exec(HWND toolbar, HWND target, FrameServer::Button *out_button) 
 {
     logger->debug(L"button_addCommand::exec"
-                  L" -> " + wstring(this->uuid) +
-                  L" -> " + wstring(this->title) +
-                  L" -> " + wstring(this->icon) +
+                  L" -> " + wstring(uuid) +
+                  L" -> " + wstring(title) +
+                  L" -> " + wstring(icon) +
                   L" -> " + boost::lexical_cast<wstring>(toolbar) +
                   L" -> " + boost::lexical_cast<wstring>(target));
 
     // load bitmap 
-    bfs::wpath path(this->icon);
+    bfs::wpath path(icon);
     if (!bfs::exists(path)) {
         logger->debug(L"button_addCommand::exec invalid file"
                       L" -> " + path.wstring());
@@ -46,7 +46,7 @@ HRESULT button_addCommand::exec(HWND toolbar, HWND target, FrameServer::Button *
     button.idCommand = 0xc001; // TODO
     button.iBitmap = index;
     button.fsStyle = 0;
-    button.iString = (INT_PTR)this->title;
+    button.iString = (INT_PTR)title;
     ::SendMessage(toolbar, TB_INSERTBUTTON, 0, (LPARAM)&button);
 
 	int ie_major = 0, ie_minor = 0;
@@ -75,7 +75,7 @@ HRESULT button_addCommand::exec(HWND toolbar, HWND target, FrameServer::Button *
 		::SendMessage(target,  WM_SIZE, 0, 0);
 	}
 
-    (*out_button).uuid      = this->uuid;
+    (*out_button).uuid      = uuid;
     (*out_button).idCommand = 0xc001;     // TODO
     (*out_button).iBitmap   = index;
     (*out_button).icon      = icon;
@@ -91,10 +91,10 @@ HRESULT button_addCommand::exec(HWND toolbar, HWND target, FrameServer::Button *
  */
 HRESULT button_setIconCommand::exec(HWND toolbar, HWND target, int idCommand, int iBitmap) 
 {
-    wstring url(this->url);
+    wstring url(url);
 
     logger->debug(L"button_setIconCommand::exec"
-                  L" -> " + wstring(this->uuid) +
+                  L" -> " + wstring(uuid) +
                   L" -> " + url +
                   L" -> " + boost::lexical_cast<wstring>(toolbar) +
                   L" -> " + boost::lexical_cast<wstring>(target) +
@@ -139,25 +139,24 @@ HRESULT button_setIconCommand::exec(HWND toolbar, HWND target, int idCommand, in
 HRESULT button_setTitleCommand::exec(HWND toolbar, HWND target, int idCommand) 
 {
     logger->debug(L"button_setTitleCommand::exec"
-                  L" -> " + wstring(this->uuid) +
-                  L" -> " + wstring(this->title) +
+                  L" -> " + wstring(uuid) +
+                  L" -> " + wstring(title) +
                   L" -> " + boost::lexical_cast<wstring>(toolbar) +
                   L" -> " + boost::lexical_cast<wstring>(target));
 
     // init button info
-    TBBUTTONINFO buttoninfo;
-    memset(&buttoninfo, 0, sizeof(TBBUTTONINFO));
+    TBBUTTONINFO buttoninfo = { 0 };
+    wchar_t binfo_textbuff[MAX_PATH] = { 0 };
     buttoninfo.cbSize  = sizeof(TBBUTTONINFO);
     buttoninfo.dwMask  = TBIF_COMMAND | TBIF_TEXT;
-    buttoninfo.pszText = new wchar_t[MAX_PATH];
+    buttoninfo.pszText = binfo_textbuff;
     buttoninfo.cchText = MAX_PATH;
     if (!WindowsMessage::tb_getbuttoninfo(toolbar, idCommand, &buttoninfo)) {
         logger->error(L"    button"
                       L" -> " + boost::lexical_cast<wstring>(idCommand) +
                       L" -> tb_fetbuttoninfo failed");
         return S_OK;
-    } 
-    delete buttoninfo.pszText;
+    }
 
     CComBSTR btitle(title);
     buttoninfo.pszText = btitle;  // TODO
@@ -180,8 +179,8 @@ HRESULT button_setTitleCommand::exec(HWND toolbar, HWND target, int idCommand)
 HRESULT button_setBadgeCommand::exec(HWND toolbar, HWND target, int idCommand) 
 {
     logger->debug(L"button_setBadgeCommand::exec"
-                  L" -> " + wstring(this->uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(this->number) +
+                  L" -> " + wstring(uuid) +
+                  L" -> " + boost::lexical_cast<wstring>(number) +
                   L" -> " + boost::lexical_cast<wstring>(toolbar) +
                   L" -> " + boost::lexical_cast<wstring>(target));
 
@@ -201,11 +200,11 @@ HRESULT button_setBadgeCommand::exec(HWND toolbar, HWND target, int idCommand)
 HRESULT button_setBadgeBackgroundColorCommand::exec(HWND toolbar, HWND target, int idCommand) 
 {
     logger->debug(L"button_setBadgeBackgroundColorCommand::exec"
-                  L" -> " + wstring(this->uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(this->r) +
-                  L" -> " + boost::lexical_cast<wstring>(this->g) +
-                  L" -> " + boost::lexical_cast<wstring>(this->b) +
-                  L" -> " + boost::lexical_cast<wstring>(this->a) +
+                  L" -> " + wstring(uuid) +
+                  L" -> " + boost::lexical_cast<wstring>(r) +
+                  L" -> " + boost::lexical_cast<wstring>(g) +
+                  L" -> " + boost::lexical_cast<wstring>(b) +
+                  L" -> " + boost::lexical_cast<wstring>(a) +
                   L" -> " + boost::lexical_cast<wstring>(toolbar) +
                   L" -> " + boost::lexical_cast<wstring>(target));
     
@@ -223,9 +222,9 @@ HRESULT button_onClickCommand::exec()
     HRESULT hr;
 
     logger->debug(L"button_onClickCommand::exec"
-                  L" -> " + wstring(this->uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(this->point.x) +
-                  L" -> " + boost::lexical_cast<wstring>(this->point.y));
+                  L" -> " + wstring(uuid) +
+                  L" -> " + boost::lexical_cast<wstring>(point.x) +
+                  L" -> " + boost::lexical_cast<wstring>(point.y));
 
     // invoke NativeControls
     logger->debug(L"button_onClickCommand::exec invoking NativeControls");
@@ -244,7 +243,7 @@ HRESULT button_onClickCommand::exec()
         return S_OK;
     }
 
-    hr = nativeControls->button_click(CComBSTR(this->uuid), this->point);
+    hr = nativeControls->button_click(CComBSTR(uuid), point);
     if (FAILED(hr)) {
         logger->error(L"button_onClickCommand::exec"
                       L"failed to invoke NativeControls::button_click"
@@ -264,7 +263,7 @@ HRESULT button_onClickCommand::exec()
     if (major >= 8) {
         BOOL visible = FALSE;
         HWND popup = NULL;
-        hr = nativeControls->popup_hwnd(CComBSTR(this->uuid), &visible, (ULONG*)&popup);
+        hr = nativeControls->popup_hwnd(CComBSTR(uuid), &visible, (ULONG*)&popup);
         if (FAILED(hr) || !popup) {
             logger->error(L"button_onClickCommand::exec"
                           L"failed to invoke NativeControls::popup_hwnd"
