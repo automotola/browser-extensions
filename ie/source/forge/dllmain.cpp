@@ -29,7 +29,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
 
 
     // save module path
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
     _AtlModule.moduleExec = bfs::wpath(buf);
     _AtlModule.modulePath = bfs::wpath(buf).parent_path();

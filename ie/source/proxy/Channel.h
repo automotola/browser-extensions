@@ -89,7 +89,7 @@ struct TabCommand : public Command {
 #pragma warning(disable:4996) // http://www.urbandictionary.com/define.php?term=ffffuuuu
 
 struct ForgeCommand : public TabCommand {
-    wchar_t uuid [MAX_PATH];
+  wchar_t uuid[MAX_PATH];
     ForgeCommand(UINTX type) : TabCommand(type) { }
     ForgeCommand(UINTX type, DWORDX processId, INT_PTRX proxy, const wstring& uuid) 
         : TabCommand(type, processId, proxy) { 

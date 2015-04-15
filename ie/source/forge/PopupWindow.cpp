@@ -30,28 +30,32 @@ PopupWindow::PopupWindow(const wstring& uuid, POINT point, const wstring& url)
  */
 LRESULT PopupWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    HRESULT hr;
+  logger->debug(L"PopupWindow::OnCreate");
 
-    logger->debug(L"PopupWindow::OnCreate");
+  HRESULT hr = E_FAIL;
+  COLORREF chromakey = RGB(77, 77, 77);
+  HWND hwnd;
+  CRect rect;
 
+  for (;;) {
     // set transparency
-    COLORREF chromakey = RGB(77, 77, 77);
-    ::SetLayeredWindowAttributes(this->m_hWnd, chromakey, 255, LWA_COLORKEY); 
+    ::SetLayeredWindowAttributes(m_hWnd, chromakey, 255, LWA_COLORKEY);
 
-    // create browser control
-    HWND hwnd;
-    CRect rect;
-    hr = this->GetClientRect(&rect);
-    hwnd = hiddenBrowser.Create(this->m_hWnd, 
-                                rect,
-                                CComBSTR(this->url.c_str()),
-                                WS_CHILD | WS_VISIBLE);
+    // create browser control  
+    if (!GetClientRect(&rect))
+      break;
+
+    hwnd = hiddenBrowser.Create(m_hWnd, rect, CComBSTR(url.c_str()), WS_CHILD | WS_VISIBLE);
     if (!hwnd) {
-        logger->error(L"PopupWindow::OnCreate failed to create BrowserControl");
-        return 0;
+      logger->error(L"PopupWindow::OnCreate failed to create BrowserControl");
+      break;
     }
+  
+    hr = S_OK;
+    break;
+  }
 
-    return 0;
+  return hr;
 }
 
 
@@ -60,16 +64,14 @@ LRESULT PopupWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& hand
  */
 PopupWindow::~PopupWindow() 
 {
-    logger->debug(L"PopupWindow::~PopupWindow");
+  logger->debug(L"PopupWindow::~PopupWindow");
 
-    HRESULT hr;
-    hr = this->DestroyWindow();
-    if (FAILED(hr)) {
-        logger->warn(L"PopupWindow::~PopupWindow failed to destroy window");
-    }    
-    this->m_hWnd = NULL;
+  if (!DestroyWindow())
+    logger->warn(L"PopupWindow::~PopupWindow failed to destroy window");
 
-    logger->debug(L"PopupWindow::~PopupWindow done");
+  m_hWnd = nullptr;
+
+  logger->debug(L"PopupWindow::~PopupWindow done");
 }
 
 
@@ -79,7 +81,6 @@ PopupWindow::~PopupWindow()
 LRESULT PopupWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
     logger->debug(L"PopupWindow::OnDestroy");
-
     return 0;
 }
 

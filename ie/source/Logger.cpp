@@ -209,6 +209,8 @@ std::wstring Logger::parse(IDispatch *object)
         case INVOKE_PROPERTYGET:    output << L" propget";    break;
         case INVOKE_PROPERTYPUT:    output << L" propput";    break;
         case INVOKE_PROPERTYPUTREF: output << L" propputref"; break;
+        default:
+          break;
         }
         typeinfo->ReleaseFuncDesc(funcDesc);
     }

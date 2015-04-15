@@ -57,10 +57,10 @@ class ATL_NO_VTABLE HTTPBindStatusCallback
       */
      HRESULT Async(_In_ T* pT, 
                    _In_ ATL_PDATAAVAILABLE callback, 
-                   _In_z_ BSTR method, 
+                   _In_z_ BSTR imethod, 
                    _In_z_ BSTR url, 
-                   _In_z_ BSTR data, 
-                   _In_z_ BSTR contentType, 
+                   _In_z_ BSTR idata, 
+                   _In_z_ BSTR icontentType, 
                    _Inout_opt_ IUnknown* container = NULL, 
                    _In_ BOOL relative = FALSE) {
          /*logger->debug(L"HTTPBindStatusCallback::StartAsyncDownload"
@@ -68,22 +68,23 @@ class ATL_NO_VTABLE HTTPBindStatusCallback
                        L" -> " + wstring(url));*/
 
          if (pT) {
-             this->http = (HTTP*)pT;
+             http = (HTTP*)pT;
          }
 
-         this->method = method;
-         this->contentType = contentType;
+         method = imethod;
+         contentType = icontentType;
          
          // convert POST data to ASCII
-         if (this->data) {
-             ::GlobalFree(this->data);
-             this->data = NULL;
+         if (data) {
+             ::GlobalFree(data);
+             data = nullptr;
          }
-         wstring s(data);
+
+         wstring s(idata);
          std::string asciidata(s.begin(), s.end());
-         this->datasize = static_cast<DWORD>(asciidata.length());
-         this->data = static_cast<byte*>(::GlobalAlloc(GPTR, this->datasize));
-         if (!this->data) {
+         datasize = static_cast<DWORD>(asciidata.length());
+         data = static_cast<byte*>(::GlobalAlloc(GPTR, datasize));
+         if (!data) {
              DWORD error_code = ::GetLastError();
              HRESULT hr = error_code != NO_ERROR ? HRESULT_FROM_WIN32(error_code) : E_FAIL;
              logger->debug(L"HTTPBindStatusCallback::StartAsyncDownload "
@@ -91,19 +92,19 @@ class ATL_NO_VTABLE HTTPBindStatusCallback
                            L" -> " + logger->parse(hr));
              return hr;
          }
-         memcpy(this->data, asciidata.c_str(), this->datasize);
+         memcpy(data, asciidata.c_str(), datasize);
 
-         wstring verb(method);
-         if (verb == L"GET") {
-             this->verb = BINDVERB_GET;
-         } else if (verb == L"PUT") {
-             this->verb = BINDVERB_PUT;
-         } else if (verb == L"POST") {
-             this->verb = BINDVERB_POST;
-         } else if (verb == L"DELETE") {
-             this->verb = BINDVERB_CUSTOM; // TODO 
+         wstring lverb(imethod);
+         if (lverb == L"GET") {
+             verb = BINDVERB_GET;
+         } else if (lverb == L"PUT") {
+             verb = BINDVERB_PUT;
+         } else if (lverb == L"POST") {
+             verb = BINDVERB_POST;
+         } else if (lverb == L"DELETE") {
+             verb = BINDVERB_CUSTOM; // TODO 
          } else {
-             this->verb = BINDVERB_CUSTOM;
+             verb = BINDVERB_CUSTOM;
          }
 
          return CBindStatusCallback<T, flags>::StartAsyncDownload

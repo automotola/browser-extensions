@@ -55,10 +55,9 @@ public:
     typedef std::map<std::wstring, PopupWindow::pointer> map;
 
     // methods
-    HRESULT Navigate(BSTR url) {
-        return hiddenBrowser->Navigate(url, 
-                                       &CComVariant(navNoHistory), 
-                                       NULL, NULL, NULL);
+    HRESULT Navigate(BSTR iurl) 
+    {
+      return hiddenBrowser->Navigate(iurl, &CComVariant(navNoHistory), NULL, NULL, NULL);
     }
 
     // constants
