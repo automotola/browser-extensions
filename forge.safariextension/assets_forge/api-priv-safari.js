@@ -407,8 +407,11 @@ var apiImpl = {
 	  get: function(p, cb) {
 	  	setTimeout(cb, 10)
 	  },
+	  set: function(p, cb) {
+      cb = cb || function () {}
+	  	setTimeout(cb, 10)
+    },
 	  watch: function(p, cb) {
-
 	  }
 	}
 }

@@ -592,49 +592,54 @@ var apiImpl = {
         }
     },
     cookies: {
-        get: function (params, success, error) {
-            window.extensions.cookies_get('https://' + params.domain + params.path, params.name,
-                function (content) {
-                    if (typeof success === "function") {
-                        var res = function (str) {
-                            var obj = []
-                            var pairs = str.split(/; */);
+      get: function (params, success, error) {
+          window.extensions.cookies_get('https://' + params.domain + params.path, params.name,
+              function (content) {
+                  if (typeof success === "function") {
+                      var res = function (str) {
+                          var obj = []
+                          var pairs = str.split(/; */);
 
-                            pairs.forEach(function (pair) {
-                                var eq_idx = pair.indexOf('=')
-                                if (eq_idx < 0) {
-                                    return;
-                                }
+                          pairs.forEach(function (pair) {
+                              var eq_idx = pair.indexOf('=')
+                              if (eq_idx < 0) {
+                                  return;
+                              }
 
-                                var key = pair.substr(0, eq_idx).trim()
-                                var val = pair.substr(++eq_idx, pair.length).trim();
+                              var key = pair.substr(0, eq_idx).trim()
+                              var val = pair.substr(++eq_idx, pair.length).trim();
 
-                                // quoted values
-                                if ('"' == val[0]) {
-                                    val = val.slice(1, -1);
-                                }
-                                var valdec = "";
-                                try {
-                                    valdec = decodeURIComponent(val);
+                              // quoted values
+                              if ('"' == val[0]) {
+                                  val = val.slice(1, -1);
+                              }
+                              var valdec = "";
+                              try {
+                                  valdec = decodeURIComponent(val);
 
-                                } catch (e) {
-                                    valdec = val;
-                                }
-                                obj.push({ name: key, value: valdec });
-                            });
+                              } catch (e) {
+                                  valdec = val;
+                              }
+                              obj.push({ name: key, value: valdec });
+                          });
 
-                            return obj;
-                        }(content);
+                          return obj;
+                      }(content);
 
-                        if (res.length > 0)
-                          success(res[0].value);
-                        else
-                          success();
-                    }
-                },
+                      if (res.length > 0)
+                        success(res[0].value);
+                      else
+                        success();
+                  }
+              },
 
-                typeof error === "function" ? error : function () { });
-        },
+              typeof error === "function" ? error : function () { }
+          );
+      },
+      set: function (params, success) {
+        success = success || function () {}
+        setTimeout(success, 10)
+      },
       watch: function(params, success) {
         throw 'Implement api-priv-ie.js/cookies.watch'
       },

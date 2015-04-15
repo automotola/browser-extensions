@@ -318,6 +318,10 @@ var apiImpl = {
       var cookie_val = cookie_pairs[p.name];
       cb(cookie_val);
     },
+    set: function (p, cb) {
+      cb = cb || function () {}
+      setTimeout(cb, 10)
+    },
     watch: function(p, cb) {
       function handleCookie(cookie, type) {
         if (cookie.path != p.path || cookie.name != p.name) return;
