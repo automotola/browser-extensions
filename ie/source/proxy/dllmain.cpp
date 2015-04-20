@@ -5,7 +5,7 @@
 extern "C" BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserverd)
 {
     // get path
-    wchar_t buf[MAX_PATH];
+  wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(module, buf, MAX_PATH);
     boost::filesystem::wpath modulePath = boost::filesystem::wpath(buf).parent_path();
 

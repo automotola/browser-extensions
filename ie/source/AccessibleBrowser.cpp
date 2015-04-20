@@ -46,14 +46,14 @@ Accessible::vector Accessible::children()
     HRESULT hr;
     Accessible::vector ret;
 
-    if (!this->iaccessible) {
+    if (!iaccessible) {
         logger->error(L"Accessible::children invalid IAccessible");
         return ret;
     }
 
     // count children
     long count;
-    hr = this->iaccessible->get_accChildCount(&count);
+    hr = iaccessible->get_accChildCount(&count);
     if (FAILED(hr)) {
         logger->debug(L"Accessible::children failed to get child count"
                       L" -> " + logger->parse(hr));
@@ -63,7 +63,7 @@ Accessible::vector Accessible::children()
     // get accessors
     CComVariant* accessors = new CComVariant[count];
     long countObtained;
-    hr = ::AccessibleChildren(this->iaccessible, 0, count,
+    hr = ::AccessibleChildren(iaccessible, 0, count,
                               accessors, &countObtained);
     if (FAILED(hr)) {
         logger->debug(L"Accessible::children failed to get accessors"
@@ -230,22 +230,29 @@ wstringvector AccessibleBrowser::tabs()
  */
 BOOL CALLBACK AccessibleBrowser::EnumWndProc(HWND hwnd, LPARAM param)
 {
-    BOOL ret; 
-    wchar_t buf[MAX_PATH];
-    wstring windowtext, windowclass;
-    ret = ::GetWindowText(hwnd, buf, MAX_PATH);
+  wstring windowtext;
+  {
+    wchar_t buf[MAX_PATH] = { 0 };
+    ::GetWindowText(hwnd, buf, MAX_PATH);
     windowtext = buf;
-    ret = ::RealGetWindowClass(hwnd, buf, MAX_PATH);
-    windowclass = buf;    
-    if (windowclass == L"IEFrame") {
-        logger->debug(L"AccessibleBrowser::EnumWndProc "
-                      L" -> " + boost::lexical_cast<wstring>(hwnd) +
-                      L" -> " + windowtext +
-                      L" -> " + windowclass);
-        *(HWND*)param = hwnd;
-        return false;
-    }
-    return true;
+  }
+
+  wstring windowclass;
+  {
+    wchar_t buf[MAX_PATH] = { 0 };
+    ::RealGetWindowClass(hwnd, buf, MAX_PATH);
+    windowclass = buf;
+  }
+
+  if (windowclass == L"IEFrame") {
+    logger->debug(L"AccessibleBrowser::EnumWndProc "
+      L" -> " + boost::lexical_cast<wstring>(hwnd)+
+      L" -> " + windowtext +
+      L" -> " + windowclass);
+    *(HWND*)param = hwnd;
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -254,7 +261,7 @@ BOOL CALLBACK AccessibleBrowser::EnumWndProc(HWND hwnd, LPARAM param)
 BOOL CALLBACK AccessibleBrowser::EnumChildWndProc(HWND hwnd, LPARAM param)
 {
     wstring windowtext, windowclass;
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = { 0 };
     ::GetClassName(hwnd, buf, MAX_PATH);
     windowclass = buf;
     logger->debug(L"AccessibleBrowser::EnumChildWndProc "

@@ -20,7 +20,7 @@ bool error(wchar_t *message)
                   L" -> " + wstring(message) +
                   L" -> " + boost::lexical_cast<wstring>(error));
     
-    wprintf(L"forge.exe error: %s - %d\n", message, error);
+    wprintf(L"forge.exe error: %s - %u\n", message, error);
 
     return false;
 }
@@ -82,7 +82,7 @@ bool InjectDLL(DWORD processId, wchar_t *dll)
         return error(L"InjectDLL ::OpenProcess");
     }
 
-    wchar_t path[MAX_PATH];
+    wchar_t path[MAX_PATH] = {0};
     if (!::GetModuleFileName(NULL, path, MAX_PATH)) {
         ::CloseHandle(process);
         return error(L"InjectDLL ::GetModuleFileName");
@@ -146,7 +146,7 @@ bool InjectDLL(DWORD processId, wchar_t *dll)
 int _tmain(int argc, wchar_t* argv[])
 {
     // get path
-    wchar_t buf[MAX_PATH];
+  wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(NULL, buf, MAX_PATH);
     boost::filesystem::wpath modulePath = boost::filesystem::wpath(buf).parent_path();
 

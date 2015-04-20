@@ -26,13 +26,16 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
 
     // save module instance handle
     _AtlModule.moduleHandle = instance;
-    
+
+
     // save module path
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
     _AtlModule.moduleExec = bfs::wpath(buf);
     _AtlModule.modulePath = bfs::wpath(buf).parent_path();
-    
+    // initialize logger 
+    logger->initialize(_AtlModule.modulePath);
+
     // save calling process
     ::GetModuleFileName(NULL, buf, MAX_PATH);
     wstring caller(buf);
@@ -48,8 +51,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
         return _AtlModule.DllMain(reason, reserved); 
     }
 
-    // initialize logger 
-    logger->initialize(_AtlModule.modulePath);
     logger->debug(L"Forge::DllMain"
                   L" -> " + boost::lexical_cast<wstring>(instance) +
                   L" -> " + boost::lexical_cast<wstring>(reason) +

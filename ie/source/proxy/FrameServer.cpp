@@ -42,7 +42,7 @@ bool FrameServer::AddRef(bool startListener)
                   L" -> " + boost::lexical_cast<wstring>(startListener) +
                   L" -> " + boost::lexical_cast<wstring>(FrameServer::refCount));
 
-    ATL::CComCritSecLock<CComAutoCriticalSection> lock(FrameServer::lock, true);
+    ATL::CComCritSecLock<CComAutoCriticalSection> llock(FrameServer::lock, true);
 
     if (++FrameServer::refCount == 1) {
         FrameServer::instance = new FrameServer(startListener);
@@ -61,7 +61,7 @@ bool FrameServer::Release()
     logger->debug(L"FrameServer::Release"
                   L" -> " + boost::lexical_cast<wstring>(FrameServer::refCount));
 
-    ATL::CComCritSecLock<CComAutoCriticalSection> lock(FrameServer::lock, true);
+    ATL::CComCritSecLock<CComAutoCriticalSection> llock(FrameServer::lock, true);
 
     if (++FrameServer::refCount == 0) {
         delete FrameServer::instance;
@@ -460,8 +460,8 @@ void FrameServer::OnButtonClick(HWND hwnd, WPARAM wparam, LPARAM lparam)
     }
 
     // get button rect
-    RECT rect;
-    memset(&rect, 0, sizeof(RECT));
+    RECT rect = {0};
+
     if (!WindowsMessage::tb_getrect(button.toolbar, button.idCommand, &rect)) {
         logger->error(L"FrameServer::OnButtonClick"
                       L" -> " + boost::lexical_cast<wstring>(button.idCommand) +

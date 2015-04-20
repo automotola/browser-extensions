@@ -15,9 +15,9 @@ ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
     logger->debug(L"ScriptExtensions::ScriptExtensions"
                   L" -> " + path.wstring() +
                   L" -> " + boost::lexical_cast<wstring>(reload));
-    if (reload) {
-        this->Reload();
-    }
+    
+    if (reload)
+        Reload();
 }
 
 
@@ -27,30 +27,30 @@ ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
 void ScriptExtensions::Reload()
 {
     // read manifest.json
-    this->manifest = this->ParseManifest(this->pathManifest);
-    if (!this->manifest) {
+    manifest = ParseManifest(pathManifest);
+    if (!manifest) {
         logger->debug(L"ScriptExtensions::Reload could not load manifest: " + 
-                      this->pathManifest.wstring());
+                      pathManifest.wstring());
         // TODO user-visible error please
         // TODO exit BHO cleanly
         return;
     }
-    this->manifest->dump();
+    manifest->dump();
 
     // cache background_page
-    bfs::wpath path = m_path / this->manifest->background_page;
+    bfs::wpath path = m_path / manifest->background_page;
     if (!bfs::exists(path)) {
         logger->error(L"ScriptExtensions::Reload background_page not found: " +
                       path.wstring());
     }
     std::wifstream stream(path.wstring());
-    this->background_page = 
+    background_page = 
         wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
                                    (std::istreambuf_iterator<wchar_t>())));    
 
     // cache content_scripts & styles
-    Manifest::ContentScripts::const_iterator script = this->manifest->content_scripts.begin();
-    for (; script != this->manifest->content_scripts.end(); script++) {
+    Manifest::ContentScripts::const_iterator script = manifest->content_scripts.begin();
+    for (; script != manifest->content_scripts.end(); script++) {
         wstringvector::const_iterator name = script->js.begin();
         for (; name != script->js.end(); name++) {
             bfs::wpath path = m_path / *name;
@@ -121,7 +121,7 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
 
     // parse manifest.json
     //logger->debug(L"parsed manifest: " + json_spirit::write(v));
-    Manifest manifest = {
+    Manifest lmanifest = {
         json_util::wfind_str(json, L"name"),
         json_util::wfind_str(json, L"author"),
         json_util::wfind_str(json, L"version"),
@@ -130,7 +130,7 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
         json_util::wfind_str(json, L"background_page")
     };
     json_spirit::wArray permissions = json_util::wfind_array(json, L"permissions");
-    manifest.permissions = json_util::wstrings_to_vector(permissions);
+    lmanifest.permissions = json_util::wstrings_to_vector(permissions);
 
     json_spirit::wArray content_scripts = json_util::wfind_array(json, L"content_scripts");
     json_spirit::wArray::const_iterator i = content_scripts.begin();
@@ -145,10 +145,10 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
             json_util::wfind_str(content_script, L"run_at"),
             json_util::wfind_bool(content_script, L"all_frames"),
         };
-        manifest.content_scripts.push_back(_content_script);
+       lmanifest.content_scripts.push_back(_content_script);
     }
 
-    if (manifest.content_scripts.size() == 0) {
+    if (lmanifest.content_scripts.size() == 0) {
         logger->debug(L"No activations specified. Adding default activation");
         wstringvector matches;
         matches.push_back(L"file://*");
@@ -164,7 +164,7 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
             L"start",
             false
         };
-        manifest.content_scripts.push_back(_content_script);
+        lmanifest.content_scripts.push_back(_content_script);
     }
 
     json_spirit::wObject browser_action = json_util::wfind_obj(json, L"browser_action");
@@ -174,14 +174,14 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
         json_util::wfind_str(browser_action, L"default_icon"),
         json_util::wfind_strmap(browser_action, L"default_icons")
     };
-    manifest.browser_action = _browser_action;
+    lmanifest.browser_action = _browser_action;
     json_spirit::wObject logging = json_util::wfind_obj(json, L"logging");
     Manifest::Logging _logging = { 
         json_util::wfind_str(logging, L"level"),
         json_util::wfind_bool(logging, L"console"),
         json_util::wfind_str(logging, L"filename")
     };
-    manifest.logging = _logging;
+    lmanifest.logging = _logging;
 
-    return Manifest::pointer(new Manifest(manifest));
+    return Manifest::pointer(new Manifest(lmanifest));
 }

@@ -178,7 +178,7 @@ STDMETHODIMP CNativeControls::popup_visible(BSTR uuid, BOOL isVisible, POINT poi
                   L" -> " + boost::lexical_cast<wstring>(m_frame));
 
     // TODO
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = {0};
     ::GetClassName(m_frame, buf, MAX_PATH);
     if (m_frame == NULL) {
         logger->error(L"!!!! CNativeControls::popup_visible WARNING m_frame is null !!!");

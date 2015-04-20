@@ -207,27 +207,28 @@ LONG Preferences::CreateDefault()
 /**
  * Query Registry
  */
-LONG Preferences::RegistryValue(HKEY key, const wstring& subkey, 
-                                wstringpointer *value)
+LONG Preferences::RegistryValue(HKEY key, const wstring& subkey, wstringpointer *value)
 {
-    DWORD bufsize = 1024;
-    DWORD readsize = bufsize;
-    WCHAR *buf = (WCHAR*)calloc(bufsize, sizeof(WCHAR));
-    LONG  result;
+  DWORD bufsize = 1024;
+  DWORD readsize = bufsize;
 
-    while ((result = ::RegQueryValueEx(key, subkey.c_str(),
-                                       NULL, NULL,
-                                       (LPBYTE)buf, &readsize)) 
-           == ERROR_MORE_DATA) {
-        bufsize *= 2;
-        buf = (WCHAR*)realloc(buf, bufsize);
-        memset(buf, 0, sizeof(WCHAR));
-        readsize = bufsize;
-    }
-    *value = wstringpointer(new wstring(buf));
-    free(buf);
+  std::vector<WCHAR> buf;
+  buf.resize(bufsize);
+  memset(&buf[0], 0, bufsize*sizeof(WCHAR));
 
-    return result;
+  LONG  result;
+
+  while ((result = ::RegQueryValueEx(key, subkey.c_str(), NULL, NULL, (LPBYTE)&buf[0], &readsize)) == ERROR_MORE_DATA) {
+    bufsize *= 2;
+
+    buf.resize(bufsize);
+    memset(&buf[0], 0, bufsize*sizeof(WCHAR));
+
+    readsize = bufsize;
+  }
+
+  *value = wstringpointer(new wstring(&buf[0]));
+  return result;
 }
 
 
