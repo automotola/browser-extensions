@@ -250,7 +250,7 @@ var apiImpl = {
 				}
 			}
 		},
-		open: function (params, success, error) {
+    open: function (params, success, error) {
       var currentTab = safari.application.activeBrowserWindow.activeTab;
       var tab = safari.application.activeBrowserWindow.openTab();
 
@@ -259,6 +259,13 @@ var apiImpl = {
       tab.url = params.url;
 
       if (params.keepFocus) currentTab.activate();
+    },
+		updateCurrent: function (params, success, error) {
+      var tab = safari.application.activeBrowserWindow.activeTab;
+
+      tab.addEventListener("navigate", success, false);
+
+      tab.url = params.url;
 		},
 		getCurrentTabUrl: function(params, success) {
 			var tab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab

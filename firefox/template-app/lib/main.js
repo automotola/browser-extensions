@@ -239,6 +239,11 @@ var apiImpl = {
 				}
 			});
 		},
+    updateCurrent: function (params, success) {
+      var tab = require('tabs').activeTab;
+      tab.url = params.url;
+      success(tab)
+    },
 		closeCurrent: function () {
 			this.tab.close();
 		}

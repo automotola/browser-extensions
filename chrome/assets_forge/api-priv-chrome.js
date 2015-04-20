@@ -269,8 +269,11 @@ var apiImpl = {
         success(tab.url);
       });
     },
-		open: function (params, success, error) {
-			chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
+    open: function (params, success, error) {
+      chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
+    },
+		updateCurrent: function (params, success, error) {
+			chrome.tabs.update({url: params.url}, success);
 		},
 		closeCurrent: function (params, success, error) {
 			if (params.hash) {
