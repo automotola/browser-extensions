@@ -7,7 +7,7 @@
  */
 Channel::Channel(wchar_t *baseName, DWORDX processId) 
 {
-    wchar_t name[MAX_PATH];
+  wchar_t name[MAX_PATH] = {0};
 
     int len = 0;
     for (int i = 0; i < STATE_COUNT; i++) {

@@ -42,10 +42,9 @@ class BrowserWindow
     typedef std::map<std::wstring, BrowserWindow::pointer> map;
 
     // methods
-    HRESULT Navigate(BSTR url) {
-        return hiddenBrowser->Navigate(url, 
-                                       &CComVariant(navNoHistory), 
-                                       NULL, NULL, NULL);
+    HRESULT Navigate(BSTR iurl)
+    {
+      return hiddenBrowser->Navigate(iurl, &CComVariant(navNoHistory), NULL, NULL, NULL);
     }
 
  protected:

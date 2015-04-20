@@ -24,7 +24,7 @@ HTMLDocument::HTMLDocument(const CComQIPtr<IWebBrowser2,
     : m_webBrowser2(webBrowser2)
 {
     HRESULT hr;
-    hr = this->OnConnect();
+    hr = OnConnect();
     if (FAILED(hr)) {
         logger->error(L"HTMLDocument::HTMLDocument failed to connect");
     }
@@ -36,7 +36,7 @@ HTMLDocument::HTMLDocument(const CComQIPtr<IWebBrowser2,
 HTMLDocument::~HTMLDocument()
 {
     HRESULT hr;
-    hr = this->OnDisconnect();
+    hr = OnDisconnect();
     if (FAILED(hr)) {
         logger->error(L"HTMLDocument::~HTMLDocument failed to disconnect");
     }
@@ -52,15 +52,18 @@ HRESULT HTMLDocument::OnConnect()
 
     CComPtr<IDispatch> disp;
     hr = m_webBrowser2->get_Document(&disp);
-    if (FAILED(hr) || !disp) return FAILED(hr) ? hr : E_POINTER; 
+    if (FAILED(hr) || !disp) 
+      return FAILED(hr) ? hr : E_POINTER; 
 
     m_htmlDocument2 = CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2>(disp);
-    if (!m_htmlDocument2) return E_POINTER;
+    if (!m_htmlDocument2) 
+      return E_POINTER;
     
     m_htmlDocument3 = CComQIPtr<IHTMLDocument3, &IID_IHTMLDocument3>(disp);
-    if (!m_htmlDocument3) return E_POINTER;
+    if (!m_htmlDocument3) 
+      return E_POINTER;
     
-    /*hr = this->DispEventAdvise(CComQIPtr<IUnknown, 
+    /*hr = DispEventAdvise(CComQIPtr<IUnknown, 
                                          &IID_IUnknown>(m_htmlDocument3), 
                                          &DIID_HTMLDocumentEvents);*/
 
@@ -74,7 +77,7 @@ HRESULT HTMLDocument::OnConnect()
 HRESULT HTMLDocument::OnDisconnect()
 {
     HRESULT hr = S_OK;
-    /*hr = this->DispEventUnadvise(CComQIPtr<IUnknown, 
+    /*hr = DispEventUnadvise(CComQIPtr<IUnknown, 
                                            &IID_IUnknown>(m_htmlDocument3), 
                                            &DIID_HTMLDocumentEvents);  */
 

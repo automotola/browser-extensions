@@ -63,8 +63,7 @@ BrowserControl::~BrowserControl()
     }
 
     // BrowserControl
-    hr = this->DestroyWindow();
-    if (FAILED(hr)) {
+    if (!DestroyWindow()) {
         logger->warn(L"BrowserControl::~BrowserControl failed to destroy window");
     }
     this->m_hWnd = NULL;
@@ -232,7 +231,7 @@ void __stdcall BrowserControl::OnDocumentComplete(IDispatch *idispatch,
     // subclass if necessary
     if (this->subclass && !m_subclasser) {
         HWND hwnd = this->m_hWnd;
-        wchar_t buf[MAX_PATH];
+        wchar_t buf[MAX_PATH] = {0};
         while ((hwnd = ::GetWindow(hwnd, GW_CHILD)) != NULL) { // TODO use ::EnumChildWindows
             ::GetClassName(hwnd, buf, MAX_PATH);
             if (wstring(buf) == L"Internet Explorer_Server") {
@@ -357,6 +356,8 @@ HRESULT BrowserControl::SetContent(const wstringpointer& content)
     
     // clear current data
     hr = document->clear();
+    if (FAILED(hr))
+      goto cleanup;
     
     // write it
     hr = document->write(sfArray);

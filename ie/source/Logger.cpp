@@ -13,9 +13,9 @@ Logger::Logger(Level level, const std::wstring& filename)
       m_filename(filename)
 {
     if (m_filename == L"") {
-        this->enabled = false;
+        enabled = false;
     } else {
-        this->enabled = true;
+        enabled = true;
     }
 }
 
@@ -25,7 +25,7 @@ Logger::Logger(Level level, const std::wstring& filename)
  */
 void Logger::initialize(const boost::filesystem::wpath& path)
 {
-    this->debug(L"Logger::initalize"
+    debug(L"Logger::initalize"
                 L" -> " + path.wstring());
 
     // read addon manifest.json
@@ -33,8 +33,8 @@ void Logger::initialize(const boost::filesystem::wpath& path)
         (new ScriptExtensions(path, false));
     Manifest::pointer manifest = scriptExtensions->ParseManifest();
     if (!manifest) {
-        this->debug(L"Logger::Logger could not read manifest");
-        this->enabled = false;
+        debug(L"Logger::Logger could not read manifest");
+        enabled = false;
     } else if (manifest->logging.filename != L"") {
         // Replace environment variables in path so %LOCALAPPDATA%Low can be
         // used which is the only place where the low priviledged BHO process
@@ -46,14 +46,14 @@ void Logger::initialize(const boost::filesystem::wpath& path)
             m_filename = expandedPath;
         }
         else {
-            this->error(L"Logger::Logger failed to expand environment variables in path");
+            error(L"Logger::Logger failed to expand environment variables in path");
             m_filename = manifest->logging.filename;
         }
 
-        this->debug(L"Logger::Logger using endpoint: " + m_filename);
-        this->enabled = true;
+        debug(L"Logger::Logger using endpoint: " + m_filename);
+        enabled = true;
     } else {
-        this->enabled = false;
+        enabled = false;
     }
 }
 
@@ -63,7 +63,7 @@ void Logger::initialize(const boost::filesystem::wpath& path)
  */
 void Logger::write(const std::wstring& message, Logger::Level level)
 {
-    if (!this->enabled) {
+    if (!enabled) {
         return;
     }
 
@@ -127,7 +127,7 @@ std::wstring Logger::parse(IDispatch *object)
     CComPtr<ITypeInfo> typeinfo;
     hr = object->GetTypeInfo(0, 0, &typeinfo);
     if (FAILED(hr)) { 
-        return L"no typeinfo for object -> " + this->parse(hr);
+        return L"no typeinfo for object -> " + parse(hr);
     }
 
     TYPEATTR *typeAttr;
@@ -174,7 +174,7 @@ std::wstring Logger::parse(IDispatch *object)
                    : L"[object]");
 
         if (value.vt == VT_DISPATCH) {
-            output << this->parse(value.pdispVal);
+            output << parse(value.pdispVal);
         }
         typeinfo->ReleaseVarDesc(varDesc);             
     }
@@ -209,6 +209,8 @@ std::wstring Logger::parse(IDispatch *object)
         case INVOKE_PROPERTYGET:    output << L" propget";    break;
         case INVOKE_PROPERTYPUT:    output << L" propput";    break;
         case INVOKE_PROPERTYPUTREF: output << L" propputref"; break;
+        default:
+          break;
         }
         typeinfo->ReleaseFuncDesc(funcDesc);
     }

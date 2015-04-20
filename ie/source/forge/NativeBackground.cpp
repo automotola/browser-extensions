@@ -55,53 +55,62 @@ STDMETHODIMP CNativeBackground::InterfaceSupportsErrorInfo(REFIID riid)
  * @param instance
  * @param url
  */
-STDMETHODIMP CNativeBackground::load(BSTR uuid, BSTR url, BOOL isVisible, unsigned int *instanceId)
+STDMETHODIMP CNativeBackground::load(BSTR uuid, BSTR url, BOOL is_visible, unsigned int *instanceId)
 {
+  HRESULT hr = E_FAIL;
+  HWND hwnd;
+
+  for (;;) {
+    if (!instanceId)
+      break;
+
     *instanceId = this->instanceCounter++;
     m_clients[uuid].insert(*instanceId);
 
     logger->debug(L"CNativeBackground::load"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + wstring(url) +
-                  L" -> " + boost::lexical_cast<wstring>(isVisible) +
-                  L" -> " + boost::lexical_cast<wstring>(*instanceId));
+      L" -> " + wstring(uuid) +
+      L" -> " + wstring(url) +
+      L" -> " + boost::lexical_cast<wstring>(is_visible)+
+      L" -> " + boost::lexical_cast<wstring>(*instanceId));
 
     // check if we're attached
     BrowserWindow::pointer crouchingWindow = m_crouchingWindows[uuid];
     if (crouchingWindow) {
-        logger->debug(L"CNativeBackground::load already attached");
-        return S_OK;
+      logger->debug(L"CNativeBackground::load already attached");
+      hr = S_OK;
+      break;
     }
 
     // create, attach & load
-    HWND hwnd;
     crouchingWindow = BrowserWindow::pointer(new BrowserWindow(uuid, url));
-    hwnd = crouchingWindow->Create(NULL, 
-                                   CRect(0, 0, 640, 780),
-                                   uuid);
+
+    hwnd = crouchingWindow->Create(NULL, CRect(0, 0, 640, 780), uuid);
     if (!hwnd) {
-        logger->debug(L"CNativeBackground::load failed to create window");
-        return E_FAIL;
-    }    
-    
+      logger->debug(L"CNativeBackground::load failed to create window");
+      break;
+    }
+
     /*HRESULT hr;
     hr = crouchingWindow->Navigate(url);
     if (FAILED(hr)) {
-        logger->debug(L"NativeBackground::load background page failed to load"
-                      L" -> " + wstring(uuid) +
-                      L" -> " + wstring(url) +
-                      L" -> " + logger->parse(hr));
-        return hr;
+    logger->debug(L"NativeBackground::load background page failed to load"
+    L" -> " + wstring(uuid) +
+    L" -> " + wstring(url) +
+    L" -> " + logger->parse(hr));
+    return hr;
     }*/
-    
+
     // initial visibility
-    crouchingWindow->ShowWindow(isVisible ? SW_SHOW : SW_HIDE);
-    this->isVisible = isVisible;
+    crouchingWindow->ShowWindow(is_visible ? SW_SHOW : SW_HIDE);
+    isVisible = is_visible;
 
     // save it
     m_crouchingWindows[uuid] = crouchingWindow;
+    hr = S_OK;
+    break;
+  }
 
-    return S_OK;
+  return hr;
 }
 
 /**
@@ -153,11 +162,11 @@ HRESULT CNativeBackground::shutdown()
  * @param uuid
  * @param isVisible
  */
-STDMETHODIMP CNativeBackground::visible(BSTR uuid, BOOL isVisible)
+STDMETHODIMP CNativeBackground::visible(BSTR uuid, BOOL is_visible)
 {
     logger->debug(L"CNativeBackground::visible"
                   L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(isVisible));
+                  L" -> " + boost::lexical_cast<wstring>(is_visible));
 
     return S_OK;
 }

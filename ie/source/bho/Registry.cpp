@@ -136,7 +136,7 @@ bool Registry::rdel(HKEY hKeyRoot, LPTSTR lpSubKey)
     LPTSTR lpEnd;
     LONG result;
     DWORD size;
-    TCHAR szName[MAX_PATH];
+    TCHAR szName[MAX_PATH] = {0};
     HKEY hKey;
     FILETIME ftWrite;
 

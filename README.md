@@ -130,4 +130,9 @@ Changing C++ libraries
 
 * Boost: Download and install boost_1_57_0-msvc-12.0-32.exe from http://sourceforge.net/projects/boost/files/boost-binaries/1.57.0/
 * Add a BOOST_HOME variable to your environment and set it to where you installed boost, without the trailing slash.
+* As alternative build boost from source, selecting only needed requirements
+* Build x64 target `bootstrap.bat && b2 address-model=64 --with-regex --with-filesystem runtime-link=static`
+* Rename $BOOST_HOME/stage/lib -> $BOOST_HOME/stage/lib64
+* Build x86 target `b2 --with-regex --with-filesystem runtime-link=static`
+* Now boost libraries are ready for compiling both x86 and x64 targets
 * Open .\ie\msvc\ForgeIE.sln

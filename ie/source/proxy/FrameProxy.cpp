@@ -10,13 +10,12 @@ bool FrameProxy::Is64BitProcess(DWORD processId)
     logger->debug(L"FrameProxy::Is64BitProcess");
 
     // get os version: http://msdn.microsoft.com/en-us/library/ms724833(v=vs.85).aspx
-    OSVERSIONINFO version;
-    ::ZeroMemory(&version, sizeof(OSVERSIONINFO));
+    OSVERSIONINFO version = { 0 };
     version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     ::GetVersionEx(&version);
 
     // get cpu arch: http://msdn.microsoft.com/en-us/library/ms724958(v=vs.85).aspx
-    SYSTEM_INFO sysinfo;
+    SYSTEM_INFO sysinfo = { 0 };
     ::GetNativeSystemInfo(&sysinfo);
 
     logger->debug(L"FrameProxy::Is64BitProcess Windows Version"
@@ -85,20 +84,18 @@ bool FrameProxy::InjectDLL(HINSTANCE instance, DWORD processId)
 {
     logger->debug(L"FrameProxy::InjectDLL");
 
-    STARTUPINFO startupInfo;
-    ::ZeroMemory(&startupInfo, sizeof(startupInfo));
+    STARTUPINFO startupInfo = {0};
     startupInfo.cb = sizeof(startupInfo);
     startupInfo.dwFlags |= STARTF_USESHOWWINDOW;
     startupInfo.wShowWindow = FALSE;
     
-    PROCESS_INFORMATION processInfo;
-    ::ZeroMemory(&processInfo, sizeof(processInfo));
+    PROCESS_INFORMATION processInfo = {0};
     
-    wchar_t params[MAX_PATH];
+    wchar_t params[MAX_PATH] = {0};
     _itow_s(processId, params, MAX_PATH, 10);
     
     // get module path
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
     bfs::wpath path = bfs::wpath(buf).parent_path();
 
@@ -176,24 +173,25 @@ FrameProxy::FrameProxy(const wstring& uuid, HINSTANCE instance,
         m_frameServer->load(toolbar, target, 
                             uuid, title, icon,
                             ::GetCurrentProcessId(), (INT_PTRX)this);
-        this->isOnline = true;
+        isOnline = true;
         return;
     }
 
-    m_frameServer = NULL;
+    m_frameServer = nullptr;
     m_commandChannel = new Channel(L"IeBarListner", processId);
     m_messageChannel = new Channel(L"IeBarMsgPoint", ::GetCurrentProcessId());
     if (m_messageChannel->IsFirst()) {
       HANDLE thread = ::CreateThread(NULL, 0, MessageHandlerListener, m_messageChannel, 0, NULL);
       ::CloseHandle(thread);
     }
+
     if (m_commandChannel->IsFirst()) {
-        this->isOnline = this->InjectDLL(instance, processId);
+        isOnline = InjectDLL(instance, processId);
     } else {
-        this->isOnline = true; // already conencted
+        isOnline = true; // already conencted
     }
 
-    if (this->isOnline && uuid != L"NativeControls") { // @ugly
+    if (isOnline && uuid != L"NativeControls") { // @ugly
         logger->debug(L"FrameProxy::FrameProxy sending LoadCommand message");
         LoadCommand command(reinterpret_cast<HWNDX>(toolbar), 
                             reinterpret_cast<HWNDX>(target), 

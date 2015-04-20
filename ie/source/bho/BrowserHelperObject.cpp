@@ -195,7 +195,12 @@ HRESULT CBrowserHelperObject::OnConnect(IUnknown *unknown)
 
     // inform NativeControls of browser's HWND - TODO s/load/advise
     logger->debug(L"CBrowserHelperObject::OnConnect getting NativeControls");
-    hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED); 
+    hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+      ::CoUninitialize(); // ?
+      return hr;
+    }
+
     hr = ::CoCreateInstance(CLSID_NativeControls, 
                             NULL,
                             CLSCTX_LOCAL_SERVER, 

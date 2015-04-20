@@ -19,10 +19,13 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     _AtlModule.moduleHandle = instance;
     
     // save addon path
-    wchar_t buf[MAX_PATH];
+    wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
     _AtlModule.moduleExec = bfs::wpath(buf);
     _AtlModule.modulePath = bfs::wpath(buf).parent_path();
+    
+    // initialize logger 
+    logger->initialize(_AtlModule.modulePath);
 
     // save calling process
     ::GetModuleFileName(NULL, buf, MAX_PATH);
@@ -51,8 +54,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
         logger->debug(L"BHO::DllMain(DLL_PROCESS_ATTACH) registering");
     }
 
-    // initialize logger 
-    logger->initialize(_AtlModule.modulePath);
     logger->debug(L"BHO::DllMain"
                   L" -> " + boost::lexical_cast<wstring>(instance) +
                   L" -> " + boost::lexical_cast<wstring>(reason) +
@@ -72,14 +73,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
         logger->debug(L"dllexports::AllRegisterServer failed to read manifest file: " +
                       scriptExtensions->pathManifest.wstring() + 
                       L" at: " + _AtlModule.modulePath.wstring());
-        ::MessageBox(NULL,
-                     wstring(L"dllexports::AllRegisterServer "
-                             L"Failed to register add-on. Please check that the "
-                             L"manifest.json file is present at " +
-                             _AtlModule.modulePath.wstring() +
-                             L" and properly configured.").c_str(),
-                     VENDOR_COMPANY_NAME,
-                     MB_TASKMODAL | MB_ICONEXCLAMATION);
+        
+        wstring message = L"dllexports::AllRegisterServer Failed to register add-on. Please check that the manifest.json file is present at ";
+        logger->error(message + _AtlModule.modulePath.wstring() + L" and properly configured.");
         return EXIT_FAILURE;
     }
 

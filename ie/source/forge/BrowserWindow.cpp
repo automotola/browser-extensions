@@ -22,31 +22,40 @@ BrowserWindow::BrowserWindow(const wstring& uuid, const wstring& url)
  */
 LRESULT BrowserWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    if (!this->m_hWnd) {
-        logger->debug(L"BrowserWindow::Oncreate says this does not yet exist");
-        return 0;
+  HRESULT hr = 0;
+  HWND hwnd;
+  CRect dimensions;
+
+
+  for (;;) {
+    if (!m_hWnd) {
+      logger->debug(L"BrowserWindow::Oncreate says this does not yet exist");
+      break;
     }
 
     logger->debug(L"BrowserWindow::OnCreate");
+    if (!GetClientRect(&dimensions)) {
+      hr = E_FAIL;
+      break;
+    }
 
-    HRESULT hr;
-    HWND hwnd;
-    CRect dimensions;
-
-    hr = this->GetClientRect(&dimensions);
-    hwnd = hiddenBrowser.Create(this->m_hWnd, 
-                                dimensions,
-                                CComBSTR(this->url.c_str()), // L"about:blank",
-                                WS_CHILD | WS_VISIBLE);
+    hwnd = hiddenBrowser.Create(m_hWnd, dimensions, CComBSTR(url.c_str()), WS_CHILD | WS_VISIBLE);
     if (!hwnd) {
-        logger->debug(L"BrowserWindow::OnCreate failed to create BrowserControl");
-        return 0; 
+      logger->debug(L"BrowserWindow::OnCreate failed to create BrowserControl");
+      break;
     }
 
     hr = hiddenBrowser.ShowWindow(SW_SHOW);
-    hr = this->ShowWindow(SW_HIDE);
+    if (FAILED(hr))
+      break;
+
+    if(!ShowWindow(SW_HIDE)) 
+      hr = E_FAIL;
     
-    return 0; 
+    break;
+  }
+
+  return hr; 
 }
 
 
@@ -55,16 +64,14 @@ LRESULT BrowserWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& ha
  */
 BrowserWindow::~BrowserWindow() 
 {
-    logger->debug(L"BrowserWindow::~BrowserWindow");
+  logger->debug(L"BrowserWindow::~BrowserWindow");
 
-    HRESULT hr;
-    hr = this->DestroyWindow();
-    if (FAILED(hr)) {
-        logger->warn(L"BrowserWindow::~BrowserWindow failed to destroy window");
-    }    
-    this->m_hWnd = NULL;
+  if (!DestroyWindow())
+    logger->warn(L"BrowserWindow::~BrowserWindow failed to destroy window");
 
-    logger->debug(L"BrowserWindow::~BrowserWindow done");
+  m_hWnd = nullptr;
+
+  logger->debug(L"BrowserWindow::~BrowserWindow done");
 }
 
 
@@ -97,5 +104,3 @@ LRESULT BrowserWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& hand
 
     return 0;
 }
-
-

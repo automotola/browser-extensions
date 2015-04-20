@@ -40,7 +40,7 @@ void NotificationWindow::Show(const wstring& icon, const wstring& title,
 {
     // make sure we hide any previous instance
     if (m_isInitialized) { 
-        this->ShowWindow(SW_HIDE);  
+        ShowWindow(SW_HIDE);  
     }
 
     bfs::wpath path = icon;
