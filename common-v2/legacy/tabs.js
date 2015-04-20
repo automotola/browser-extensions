@@ -79,7 +79,7 @@ forge['tabs'] = {
    * @param {function({message: string}=} error
    */
   'updateCurrent': function (url, success, error) {
-    forge.internal.call("tabs.updateCurrent", {
+    internal.priv.call("tabs.updateCurrent", {
       url: url
     }, success, error);
   },
