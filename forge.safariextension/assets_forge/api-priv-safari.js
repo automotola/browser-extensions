@@ -187,31 +187,24 @@ var apiImpl = {
 	},
 	prefs: {
 		get: function (params, success, error) {
-			success(decodeURIComponent(window.localStorage.getItem(params.key)));
+			success(decodeURIComponent(safari.extension.settings[params.key]));
 		},
 		set: function (params, success, error) {
-			success(window.localStorage.setItem(params.key, encodeURIComponent(params.value)));
+			success(safari.extension.settings[params.key] = encodeURIComponent(params.value));
 		},
 		keys: function (params, success, error) {
-			var keys = [];
-			for (var i=0; i<window.localStorage.length; i++) {
-				keys.push(window.localStorage.key(i));
-			}
-			success(keys);
+			success(Object.keys(safari.extension.settings));
 		},
 		all: function (params, success, error) {
-			var all = {};
-			for (var i=0; i<window.localStorage.length; i++) {
-				var key = window.localStorage.key(i)
-				all[key] = window.localStorage.getItem(key);
-			}
-			success(all);
+			success(safari.extension.settings);
 		},
 		clear: function (params, success, error) {
-			success(window.localStorage.removeItem(params.key));
+      delete safari.extension.settings[params.key];
+			success();
 		},
 		clearAll: function (params, success, error) {
-			success(window.localStorage.clear());
+      safari.extension.settings = {};
+			success();
 		}
 	},
 
