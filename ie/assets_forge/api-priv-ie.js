@@ -641,7 +641,20 @@ var apiImpl = {
         setTimeout(success, 10)
       },
       watch: function(params, success) {
-        throw 'Implement api-priv-ie.js/cookies.watch'
+        var cookies = this, old;
+
+        function check() {
+          cookies.get(params, function(cookie) {
+            if (cookie != old) {
+              old = cookie;
+              success(cookie);
+            }
+
+            setTimeout(check, 5000);
+          });
+        }
+
+        check();
       },
       remove: function (params) {
           return window.extensions.cookies_remove(params.url, params.name);
