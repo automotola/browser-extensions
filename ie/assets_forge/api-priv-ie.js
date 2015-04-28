@@ -246,6 +246,8 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         get: function(params, success, error) {
+          if (true) success(null);
+
             window.extensions.prefs_get(forge.config.uuid, params.key,
                                         function(value) {
                                             try {
@@ -641,10 +643,10 @@ var apiImpl = {
         setTimeout(success, 10)
       },
       watch: function(params, success) {
-        var cookies = this, old;
+        var old;
 
         function check() {
-          cookies.get(params, function(cookie) {
+          apiImpl.cookies.get(params, function(cookie) {
             if (cookie != old) {
               old = cookie;
               success(cookie);
