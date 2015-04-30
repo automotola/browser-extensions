@@ -26,12 +26,54 @@ function logBackground(level, message) {
     }
 };
 window.console = {
-    log   : function(message){ logBackground("log",   message); },
-    debug : function(message){ logBackground("debug", message); },
-    info  : function(message){ logBackground("info",  message); },
-    warn  : function(message){ logBackground("warn",  message); },
-    error : function(message){ logBackground("error", message); }
+    log   : function(message){ logBackground("log",   parseArgs(arguments));  },
+    debug : function(message){ logBackground("debug", parseArgs(arguments)); },
+    info  : function(message){ logBackground("info",  parseArgs(arguments)); },
+    warn  : function(message){ logBackground("warn",  parseArgs(arguments)); },
+    error : function(message){ logBackground("error", parseArgs(arguments)); }
 };
+
+function parseArgs(arr) {
+  var res = []
+  for (var i = 0; i < arr.length; i++) {
+    res.push(parseObject(arr[i]))
+  }
+  return res.join(', ')
+}
+
+function parseObject(obj, level) {
+  level = level || 0
+  var indent = new Array(level * 2).join(' ')
+  level++
+  var message
+  if (Array.isArray(obj)) {
+    message = obj
+  }
+  else if (typeof obj == 'object') {
+    message = '{\n'
+    for (var index in obj) {
+      if (obj.hasOwnProperty(index)) {
+        var value = obj[index]
+
+        if (!!(value && value.constructor && value.call && value.apply)) {
+          value = "[function]"
+        }
+
+        if (typeof obj == 'object') {
+          value = parseObject(value, level)
+        }
+
+        message += indent + '  ' + index + ':  ' + value + '\n'
+      }
+    }
+    message += indent + ' }'
+  }
+  else {
+    message = obj
+  }
+
+  return message
+}
 
 
 /**
@@ -411,6 +453,7 @@ var apiImpl = {
 
             try {
                 // TODO headers
+                console.log(params)
                 params.contentType = params.contentType ? params.contentType : "text/html";
                 window.extensions.xhr(params.type,
                                       params.url,
