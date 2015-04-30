@@ -473,14 +473,6 @@ var apiImpl = {
                                       },
                                       function(data) {
                                           if (typeof error !== "function") return;
-                                          try {
-                                              var json = JSON.parse(data);
-                                              data = json;
-                                          } catch (e) {
-                                              loggerpriv("request.ajax" +
-                                                         " json error -> " + data);
-                                              data = e;
-                                          }
                                           error(data);
                                      });
             } catch (e) {
