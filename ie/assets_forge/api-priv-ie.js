@@ -411,7 +411,7 @@ var apiImpl = {
 
             try {
                 // TODO headers
-                params.contentType = params.contentType ? params.contentType : "text/html";
+                params.contentType = params.contentType ? params.contentType : "application/x-www-form-urlencoded";
                 window.extensions.xhr(params.type,
                                       params.url,
                                       params.data,
@@ -663,6 +663,3 @@ var apiImpl = {
       }
     }
 }
-
-
-
