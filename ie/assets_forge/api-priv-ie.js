@@ -436,9 +436,9 @@ var apiImpl = {
 
             // check arguments
             params.type = params.type ? params.type : "GET";
-            params.data = params.data ? params.data : "";
+            //params.data = params.data ? params.data : ""; doesn't work for jquery
             params.timeout = params.timeout ? params.timeout : 60000;
-            params.headers = params.headers ? params.headers : {};
+            // params.headers = params.headers ? params.headers : {}; doesn't work for jquery
             params.accepts = params.accepts ? params.accepts : ["*/*"];
             params.accepts = typeof params.accepts === "string" ? [params.accepts] : params.accepts;
 
