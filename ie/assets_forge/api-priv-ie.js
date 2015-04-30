@@ -11,6 +11,15 @@ function loggerpriv(message) {
     window.extensions.log("api-priv-ie.js", message);
 };
 
+function clone(obj) {
+  if (null == obj || "object" != typeof obj) return obj;
+  var copy = obj.constructor();
+  for (var attr in obj) {
+      if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+  }
+  return copy;
+}
+
 
 /**
  * console.log|error|debug
@@ -426,7 +435,7 @@ var apiImpl = {
             params_.error   = typeof params_.error   === 'function' ? params_.error   : function(){};
 
             // Copy params to prevent overwriting of original success/error
-            var params = $.extend({}, params_);
+            var params = clone(params_);
             params.success = success;
             params.error = function(xhr, status, err) {
                 json = safe_jstringify(params);
