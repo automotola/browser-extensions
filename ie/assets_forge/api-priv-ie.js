@@ -24,12 +24,16 @@ function clone(obj) {
 /**
  * console.log|error|debug
  */
-function logBackground(level, message) {
+function logBackground(level, message, color) {
     var element = document.getElementById("forgeconsole");
     if (element) {
         var node = document.createElement("span");
         node.innerText = message + "\n";
+        if (color) {
+            node.style.color = color
+        }
         element.appendChild(node);
+        element.scrollIntoView(false);
     } else {
         window.extensions.log("fallback-priv" + level, message);
     }
@@ -37,9 +41,9 @@ function logBackground(level, message) {
 window.console = {
     log   : function(message){ logBackground("log",   parseArgs(arguments));  },
     debug : function(message){ logBackground("debug", parseArgs(arguments)); },
-    info  : function(message){ logBackground("info",  parseArgs(arguments)); },
-    warn  : function(message){ logBackground("warn",  parseArgs(arguments)); },
-    error : function(message){ logBackground("error", parseArgs(arguments)); }
+    info  : function(message){ logBackground("info",  parseArgs(arguments), 'blue'); },
+    warn  : function(message){ logBackground("warn",  parseArgs(arguments), 'orange'); },
+    error : function(message){ logBackground("error", parseArgs(arguments), 'red'); }
 };
 
 function parseArgs(arr) {
