@@ -8,8 +8,8 @@
  * debug logger
  */
 function loggerpriv(message) {
-    window.extensions.log("api-priv-ie.js", message);
-};
+  window.console.log(message);
+}
 
 function clone(obj) {
   if (null == obj || "object" != typeof obj) return obj;
@@ -301,7 +301,7 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         get: function(params, success, error) {
-          if (true) success(null);
+          loggerpriv('Get prefs');
 
             window.extensions.prefs_get(forge.config.uuid, params.key,
                                         function(value) {
