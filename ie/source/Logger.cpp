@@ -25,36 +25,36 @@ Logger::Logger(Level level, const std::wstring& filename)
  */
 void Logger::initialize(const boost::filesystem::wpath& path)
 {
-    debug(L"Logger::initalize"
-                L" -> " + path.wstring());
+  debug(L"Logger::initalize -> " + path.wstring());
 
-    // read addon manifest.json
-    ScriptExtensions::pointer scriptExtensions = ScriptExtensions::pointer
-        (new ScriptExtensions(path, false));
-    Manifest::pointer manifest = scriptExtensions->ParseManifest();
-    if (!manifest) {
-        debug(L"Logger::Logger could not read manifest");
-        enabled = false;
-    } else if (manifest->logging.filename != L"") {
-        // Replace environment variables in path so %LOCALAPPDATA%Low can be
-        // used which is the only place where the low priviledged BHO process
-        // can create files.
-        wchar_t expandedPath[MAX_PATH];
-        DWORD len = ::ExpandEnvironmentStrings(manifest->logging.filename.c_str(),
-                                               expandedPath, MAX_PATH);
-        if (len > 0 && len <= MAX_PATH) {
-            m_filename = expandedPath;
-        }
-        else {
-            error(L"Logger::Logger failed to expand environment variables in path");
-            m_filename = manifest->logging.filename;
-        }
-
-        debug(L"Logger::Logger using endpoint: " + m_filename);
-        enabled = true;
-    } else {
-        enabled = false;
+  // read addon manifest.json
+  ScriptExtensions::pointer scriptExtensions = ScriptExtensions::pointer
+    (new ScriptExtensions(path, false));
+  Manifest::pointer manifest = scriptExtensions->ParseManifest();
+  if (!manifest) {
+    debug(L"Logger::Logger could not read manifest");
+    enabled = false;
+  }
+  else if (manifest->logging.filename != L"") {
+    // Replace environment variables in path so %LOCALAPPDATA%Low can be
+    // used which is the only place where the low priviledged BHO process
+    // can create files.
+    wchar_t expandedPath[MAX_PATH] = { 0 };
+    DWORD len = ::ExpandEnvironmentStrings(manifest->logging.filename.c_str(), expandedPath, MAX_PATH);
+    if (len > 0 && len <= MAX_PATH) {
+      m_filename = expandedPath;
     }
+    else {
+      error(L"Logger::Logger failed to expand environment variables in path");
+      m_filename = manifest->logging.filename;
+    }
+
+    debug(L"Logger::Logger using endpoint: " + m_filename);
+    enabled = true;
+  }
+  else {
+    enabled = false;
+  }
 }
 
 
