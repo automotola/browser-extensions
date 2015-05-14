@@ -10,13 +10,9 @@
  */
 Logger::Logger(Level level, const std::wstring& filename)
     : m_level(level), 
-      m_filename(filename)
+      m_filename(filename),
+      enabled(!filename.empty())
 {
-    if (m_filename == L"") {
-        enabled = false;
-    } else {
-        enabled = true;
-    }
 }
 
 
@@ -28,8 +24,7 @@ void Logger::initialize(const boost::filesystem::wpath& path)
   debug(L"Logger::initalize -> " + path.wstring());
 
   // read addon manifest.json
-  ScriptExtensions::pointer scriptExtensions = ScriptExtensions::pointer
-    (new ScriptExtensions(path, false));
+  auto scriptExtensions = ScriptExtensions::pointer(new ScriptExtensions(path, false));
   Manifest::pointer manifest = scriptExtensions->ParseManifest();
   if (!manifest) {
     debug(L"Logger::Logger could not read manifest");
@@ -97,13 +92,16 @@ std::wstring Logger::parse(HRESULT hr)
 {
     HRESULT result;
 
-    wchar_t* buf = NULL;
+    wchar_t* buf = nullptr;
     result = ::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
                               FORMAT_MESSAGE_FROM_SYSTEM, NULL, hr,
                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                              reinterpret_cast<wchar_t*>(&buf), 0, NULL);
-    std::wstring hrstr(buf != NULL ? buf : L"unknown error");
-    ::LocalFree(reinterpret_cast<HLOCAL>(buf));
+                              LPWSTR(&buf), 0, NULL);
+    std::wstring hrstr(L"unknown error");
+    if (buf) {
+      hrstr = std::wstring(buf);
+      ::LocalFree(buf);
+    }
     
     std::wstringstream hrhex;
     hrhex << L"0x" << std::hex << hr;

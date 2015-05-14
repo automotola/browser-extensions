@@ -337,15 +337,23 @@ HRESULT AccessibleBrowser::active(IWebBrowser2 **webBrowser2)
                                SMTO_ABORTIFHUNG, 1000,
                                reinterpret_cast<PDWORD_PTR>(&result));
     if (!ret || !result) {
-        wchar_t *buf;
+        wchar_t *buf = nullptr;
         DWORD error = GetLastError();
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL);
+        
+        std::wstring sbuf;
+        if (buf) {
+          sbuf = std::wstring(buf);
+          ::LocalFree(buf);
+        }
+        
         logger->error(L"AccessibleBrowser::active "
                       L"WM_HTML_GETOBJECT failed"
-                      L" -> " + wstring(buf) +
+                      L" -> " + sbuf +
                       L" -> " + boost::lexical_cast<wstring>(msg) +
                       L" -> " + boost::lexical_cast<wstring>(result));
+
         ::FreeLibrary(instance);
         return E_FAIL;
     }

@@ -21,16 +21,20 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     // save addon path
     wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
-    _AtlModule.moduleExec = bfs::wpath(buf);
-    _AtlModule.modulePath = bfs::wpath(buf).parent_path();
+    auto bpath = bfs::wpath(buf);
+    _AtlModule.moduleExec = bpath;
+    _AtlModule.modulePath = bpath.parent_path();
     
     // initialize logger 
     logger->initialize(_AtlModule.modulePath);
 
     // save calling process
+    memset(buf, 0, MAX_PATH * sizeof(wchar_t));
+
     ::GetModuleFileName(NULL, buf, MAX_PATH);
-    wstring caller(buf);
-    transform(caller.begin(), caller.end(), caller.begin(), tolower);
+    // :TODO: Ёбанный пиздец!
+    wstring caller(buf); transform(caller.begin(), caller.end(), caller.begin(), tolower);
+
     _AtlModule.callerPath = bfs::wpath(caller);
     
     // detach
@@ -43,8 +47,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     }
     
     // attach
-    logger->debug(L"BHO::DllMain(DLL_PROCESS_ATTACH) caller: " +
-                  _AtlModule.callerPath.wstring());
+    logger->debug(L"BHO::DllMain(DLL_PROCESS_ATTACH) caller: " + _AtlModule.callerPath.wstring());
     if (caller.find(L"explorer.exe") != wstring::npos ) {
         logger->debug(L"BHO::DllMain(DLL_PROCESS_ATTACH) cannot attach to: " + caller);
         return FALSE;

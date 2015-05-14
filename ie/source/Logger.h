@@ -1,5 +1,4 @@
-#ifndef __LOGGER_H__
-#define __LOGGER_H__
+#pragma once
 
 using namespace ATL;
 
@@ -42,14 +41,22 @@ class Logger {
     std::wstring parse(HRESULT hr);
     std::wstring parse(IDispatch *object);
     
-    std::wstring GetLastError() {
-        wchar_t *buf;
+    std::wstring GetLastError() 
+    {
+        wchar_t* buf = nullptr;
         DWORD error = ::GetLastError();
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+        ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
                       FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
                       (LPTSTR)&buf, 0, NULL);
-        return std::wstring(buf);
+        
+        std::wstring res(L"unknown error");
+        if (buf) {
+          res = std::wstring(buf);
+          ::LocalFree(buf);
+        }
+
+        return res;
     }
     
 
@@ -78,5 +85,3 @@ class Logger {
     }
 };
 
-
-#endif /* __LOGGER_H__ */

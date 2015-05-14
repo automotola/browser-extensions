@@ -96,18 +96,12 @@ CBrowserHelperObject::CBrowserHelperObject()
  */
 STDMETHODIMP CBrowserHelperObject::SetSite(IUnknown *unknown)
 {
-    HRESULT hr;
-    if (unknown == NULL) {
-        hr = this->OnDisconnect(unknown);
-    } else {
-        hr = this->OnConnect(unknown);
-    }
-    if (FAILED(hr)) {
-        logger->error(L"BrowserHelperObject::SetSite failed"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
-    return IObjectWithSiteImpl<CBrowserHelperObject>::SetSite(unknown);
+  HRESULT hr = unknown ? OnConnect(unknown) : OnDisconnect(unknown);
+  if (FAILED(hr)) {
+    logger->error(L"BrowserHelperObject::SetSite failed -> " + logger->parse(hr));
+    return hr;
+  }
+  return IObjectWithSiteImpl<CBrowserHelperObject>::SetSite(unknown);
 }
 
 
@@ -116,13 +110,12 @@ STDMETHODIMP CBrowserHelperObject::SetSite(IUnknown *unknown)
  */
 HRESULT CBrowserHelperObject::OnConnect(IUnknown *unknown) 
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
 
-    logger->debug(L"BrowserHelperObject::OnConnect" 
-                  L" -> " + _AtlModule.moduleManifest->uuid);
+    logger->debug(L"BrowserHelperObject::OnConnect -> " + _AtlModule.moduleManifest->uuid);
 
     if (m_isConnected) {
-        logger->debug(L"  -> OK already connected");
+        logger->debug(L" -> OK already connected");
         return S_OK;
     }
 

@@ -90,140 +90,184 @@ HRESULT HTMLDocument::OnDisconnect()
  */
 HRESULT HTMLDocument::InjectDocument(const wstringpointer& content)
 {
-    logger->debug(L"HTMLDocument::InjectBody"
-                  L" -> " + (*content));
+  if (!content)
+    return E_POINTER;
 
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
-    }
+  logger->debug(L"HTMLDocument::InjectBody -> " + (*content));
 
-    HRESULT hr;
+  if (!m_htmlDocument3 || !m_htmlDocument2) {
+    return E_POINTER;
+  }
 
-    // clear any existing content
-    hr = m_htmlDocument2->clear();
-    if (FAILED(hr)) {
-        logger->error(L"HTMLDocument::InjectBody failed to clear document"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
+  HRESULT hr = S_OK;
 
-    // inject content
-    CComSafeArray<VARIANT> safeArray;
-    safeArray.Create(1, 0);
-    safeArray[0] = CComBSTR((*content).c_str());
-    hr = m_htmlDocument2->write(safeArray);
-    if (FAILED(hr)) {
-        logger->error(L"HTMLDocument::InjectBody failed to inject content"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
+  // clear any existing content
+  hr = m_htmlDocument2->clear();
+  if (FAILED(hr)) {
+    logger->error(L"HTMLDocument::InjectBody failed to clear document"
+      L" -> " + logger->parse(hr));
+    return hr;
+  }
 
-    // close stream
-    hr = m_htmlDocument2->close();
-    if (FAILED(hr)) {
-        logger->error(L"HTMLDocument::InjectBody failed to close stream"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
+  // inject content
+  CComSafeArray<VARIANT> safeArray;
+  safeArray.Create(1, 0);
+  safeArray[0] = CComBSTR((*content).c_str());
+  hr = m_htmlDocument2->write(safeArray);
+  if (FAILED(hr)) {
+    logger->error(L"HTMLDocument::InjectBody failed to inject content"
+      L" -> " + logger->parse(hr));
+    return hr;
+  }
 
-    return S_OK;
+  // close stream
+  hr = m_htmlDocument2->close();
+  if (FAILED(hr)) {
+    logger->error(L"HTMLDocument::InjectBody failed to close stream"
+      L" -> " + logger->parse(hr));
+    return hr;
+  }
+
+  return hr;
 }
-
 
 /**
  * Inject a script into <head />
  */
 HRESULT HTMLDocument::InjectScript(const wstringpointer& content)
 {
-    HRESULT hr;
-
+  HRESULT hr = S_OK;
+  for (;;) {
     if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
+      hr = E_POINTER;
+      break;
     }
 
     CComQIPtr<IHTMLElement> element;
     hr = m_htmlDocument2->createElement(HTMLDocument::tagScript, &element);
-    if (FAILED(hr) || !element) return FAILED(hr) ? hr : E_POINTER; 
+    if (FAILED(hr))
+      break;
+    if (!element) {
+      hr = E_POINTER;
+      break;
+    }
 
     CComQIPtr<IHTMLScriptElement> script(element);
     hr = script->put_defer(VARIANT_TRUE);
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
+
     hr = script->put_type(HTMLDocument::attrScriptType);
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
+
     hr = script->put_text(CComBSTR((*content).c_str()));
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
 
     CComPtr<IHTMLElementCollection> heads;
-    hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead,
-                                               &heads);
-    if (FAILED(hr) || !heads) return FAILED(hr) ? hr : E_POINTER; 
-
+    hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead, &heads);
+    if (FAILED(hr))
+      break;
+    if (!heads) {
+      hr = E_POINTER;
+      break;
+    }
+    
     CComPtr<IDispatch> disp;
     hr = heads->item(CComVariant(0, VT_I4), CComVariant(0, VT_I4), &disp);
-    if (FAILED(hr) || !disp) return FAILED(hr) ? hr : E_POINTER; 
+    if (FAILED(hr))
+      break;
+    if (!disp) {
+      hr = E_POINTER;
+      break;
+    }
 
     CComQIPtr<IHTMLDOMNode> head(disp);
-    if(!head) return E_POINTER;
-
+    if (!head) {
+      hr = E_POINTER;
+      break;
+    }
+      
     CComPtr<IHTMLDOMNode> firstChild;
     hr = head->get_firstChild(&firstChild);
-    if (FAILED(hr) || !firstChild) return FAILED(hr) ? hr : E_POINTER; 
+    if (FAILED(hr))
+      break;
+    if (!firstChild) {
+      hr = E_POINTER;
+      break;
+    };
 
     CComPtr<IHTMLDOMNode> retnode;
-    hr = head->insertBefore(CComQIPtr<IHTMLDOMNode>(script),
-                            CComVariant(firstChild),
-                            &retnode);
-    if (FAILED(hr)) return hr;
-
-    return hr;
+    hr = head->insertBefore(CComQIPtr<IHTMLDOMNode>(script), CComVariant(firstChild), &retnode);
+    break;
+  }
+  return hr;
 }
-
 
 /**
  * Inject a script link into <head />
  */
 HRESULT HTMLDocument::InjectScriptTag(const wstring& type, const wstring& src)
 {
-    HRESULT hr;
-
+  HRESULT hr = S_OK;
+  for (;;) {
     if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
+      hr = E_POINTER;
+      break;
     }
 
     CComQIPtr<IHTMLElement> element;
     hr = m_htmlDocument2->createElement(HTMLDocument::tagScript, &element);
-    if (FAILED(hr) || !element) return FAILED(hr) ? hr : E_POINTER; 
+    if (FAILED(hr))
+      break;
+    if (!element) {
+      hr = E_POINTER;
+      break;
+    };
 
     CComQIPtr<IHTMLScriptElement> script(element);
     hr = script->put_defer(VARIANT_TRUE);
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
     hr = script->put_type(CComBSTR(type.c_str()));
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
     hr = script->put_src(CComBSTR(src.c_str()));
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr))
+      break;
 
     CComPtr<IHTMLElementCollection> heads;
-    hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead,
-                                               &heads);
-    if (FAILED(hr) || !heads) return FAILED(hr) ? hr : E_POINTER; 
+    hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead, &heads);
+    if (FAILED(hr))
+      break;
+    if (!heads) {
+      hr = E_POINTER;
+      break;
+    };
 
     CComPtr<IDispatch> disp;
     hr = heads->item(CComVariant(0, VT_I4), CComVariant(0, VT_I4), &disp);
-    if (FAILED(hr) || !disp) return FAILED(hr) ? hr : E_POINTER; 
-    
-    hr = CComQIPtr<IHTMLDOMNode>(disp)->
-        appendChild(CComQIPtr<IHTMLDOMNode>(script), 
-                    &CComPtr<IHTMLDOMNode>());    
+    if (FAILED(hr))
+      break;
+    if (!disp) {
+      hr = E_POINTER;
+      break;
+    };
+
+    hr = CComQIPtr<IHTMLDOMNode>(disp)->appendChild(CComQIPtr<IHTMLDOMNode>(script), &CComPtr<IHTMLDOMNode>());
     if (FAILED(hr)) {
-        logger->debug(L"HTMLDocument::InjectScriptTag failed " 
-                      L" -> " + src +
-                      L" -> " + logger->parse(hr));
+      logger->debug(L"HTMLDocument::InjectScriptTag failed "
+        L" -> " + src +
+        L" -> " + logger->parse(hr));
     }
 
-    logger->debug(L"HTMLDocument::InjectScriptTag " 
-                  L" -> " + src);
+    logger->debug(L"HTMLDocument::InjectScriptTag "
+      L" -> " + src);
+    break;
+  }
 
-    return hr;
+  return hr;
 }
 
 
@@ -311,5 +355,3 @@ HRESULT HTMLDocument::ClickElementById(const wstring& id)
 
     return element->click();
 }
-
-
