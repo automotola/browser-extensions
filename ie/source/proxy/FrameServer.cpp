@@ -10,7 +10,7 @@
  * Static initialization
  */
 LONG FrameServer::refCount = 0;
-FrameServer *FrameServer::instance = 0;
+FrameServer *FrameServer::instance = nullptr;
 ATL::CComAutoCriticalSection FrameServer::lock;
 
 
@@ -18,7 +18,7 @@ ATL::CComAutoCriticalSection FrameServer::lock;
  * Lifecycle
  */
 FrameServer::FrameServer(bool startListener)
-    : m_channel(NULL),
+    : m_channel(nullptr),
       m_tabCount(0),
       m_activeProcessId(0),
       m_activeProxy(NULL)
@@ -63,9 +63,10 @@ bool FrameServer::Release()
 
     ATL::CComCritSecLock<CComAutoCriticalSection> llock(FrameServer::lock, true);
 
-    if (++FrameServer::refCount == 0) {
+    // if (++FrameServer::refCount == 0) { // strange copy-paste? 
+    if (FrameServer::refCount == 0) {
         delete FrameServer::instance;
-        FrameServer::instance = NULL;
+        FrameServer::instance = nullptr;
         return true;
     }
 
@@ -171,13 +172,11 @@ void FrameServer::unload(DWORDX processId, INT_PTRX proxy)
         // reverse subclassing 
         ::SetWindowLongPtr(m_toolbar, GWLP_WNDPROC, (LONG_PTR)m_oldWndProcToolbar);
         ::SetWindowLongPtr(m_target, GWLP_WNDPROC, (LONG_PTR)m_oldWndProcTarget);
-        m_toolbar = m_target = NULL;
+        m_toolbar = m_target = nullptr;
         
         // remove buttons
-        Buttons::iterator i;
-        for (i = m_buttons.begin(); i != m_buttons.end(); i++) {
-            i->second.Destroy();
-        }
+        for (auto b : m_buttons)
+            b.second.Destroy();
         m_buttons.clear();
         
         // destory IPC channel which receives requests

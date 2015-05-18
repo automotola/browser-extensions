@@ -48,26 +48,28 @@ HTMLDocument::~HTMLDocument()
  */
 HRESULT HTMLDocument::OnConnect()
 {
-    HRESULT hr;
+  HRESULT hr = S_OK;
+  CComPtr<IDispatch> disp = nullptr;
 
-    CComPtr<IDispatch> disp;
+  for (;;) {
+    BreakOnNull(m_webBrowser2, hr);
+
     hr = m_webBrowser2->get_Document(&disp);
-    if (FAILED(hr) || !disp) 
-      return FAILED(hr) ? hr : E_POINTER; 
+    BreakOnFailed(hr);
+    BreakOnNull(disp, hr);
 
     m_htmlDocument2 = CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2>(disp);
-    if (!m_htmlDocument2) 
-      return E_POINTER;
-    
-    m_htmlDocument3 = CComQIPtr<IHTMLDocument3, &IID_IHTMLDocument3>(disp);
-    if (!m_htmlDocument3) 
-      return E_POINTER;
-    
-    /*hr = DispEventAdvise(CComQIPtr<IUnknown, 
-                                         &IID_IUnknown>(m_htmlDocument3), 
-                                         &DIID_HTMLDocumentEvents);*/
+    BreakOnNull(m_htmlDocument2, hr);
 
-    return hr;
+    m_htmlDocument3 = CComQIPtr<IHTMLDocument3, &IID_IHTMLDocument3>(disp);
+    BreakOnNull(m_htmlDocument3, hr);
+
+    // hr = DispEventAdvise(CComQIPtr<IUnknown, &IID_IUnknown>(m_htmlDocument3), &DIID_HTMLDocumentEvents);
+
+    break;
+  }
+
+  return hr;
 }
 
 
@@ -137,71 +139,51 @@ HRESULT HTMLDocument::InjectDocument(const wstringpointer& content)
 HRESULT HTMLDocument::InjectScript(const wstringpointer& content)
 {
   HRESULT hr = S_OK;
-  for (;;) {
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-      hr = E_POINTER;
-      break;
-    }
+  CComQIPtr<IHTMLElement> element = nullptr;
+  CComPtr<IHTMLElementCollection> heads = nullptr;
+  CComPtr<IDispatch> disp = nullptr;
+  CComPtr<IHTMLDOMNode> firstChild = nullptr;
+  CComPtr<IHTMLDOMNode> retnode = nullptr;
 
-    CComQIPtr<IHTMLElement> element;
+  for (;;) {
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
+    
     hr = m_htmlDocument2->createElement(HTMLDocument::tagScript, &element);
-    if (FAILED(hr))
-      break;
-    if (!element) {
-      hr = E_POINTER;
-      break;
-    }
+    BreakOnNull(element, hr);
+    BreakOnFailed(hr);
 
     CComQIPtr<IHTMLScriptElement> script(element);
+    BreakOnNull(script, hr);
     hr = script->put_defer(VARIANT_TRUE);
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
     hr = script->put_type(HTMLDocument::attrScriptType);
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
     hr = script->put_text(CComBSTR((*content).c_str()));
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
-    CComPtr<IHTMLElementCollection> heads;
     hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead, &heads);
-    if (FAILED(hr))
-      break;
-    if (!heads) {
-      hr = E_POINTER;
-      break;
-    }
-    
-    CComPtr<IDispatch> disp;
+    BreakOnFailed(hr);
+    BreakOnNull(heads, hr);
+
     hr = heads->item(CComVariant(0, VT_I4), CComVariant(0, VT_I4), &disp);
-    if (FAILED(hr))
-      break;
-    if (!disp) {
-      hr = E_POINTER;
-      break;
-    }
+    BreakOnFailed(hr);
+    BreakOnNull(disp, hr);
 
     CComQIPtr<IHTMLDOMNode> head(disp);
-    if (!head) {
-      hr = E_POINTER;
-      break;
-    }
+    BreakOnNull(head, hr);
       
-    CComPtr<IHTMLDOMNode> firstChild;
     hr = head->get_firstChild(&firstChild);
-    if (FAILED(hr))
-      break;
-    if (!firstChild) {
-      hr = E_POINTER;
-      break;
-    };
+    BreakOnFailed(hr);
+    BreakOnNull(firstChild, hr);
 
-    CComPtr<IHTMLDOMNode> retnode;
     hr = head->insertBefore(CComQIPtr<IHTMLDOMNode>(script), CComVariant(firstChild), &retnode);
+    BreakOnNull(retnode, hr);
     break;
   }
+
   return hr;
 }
 

@@ -28,12 +28,13 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     // initialize logger 
     logger->initialize(_AtlModule.modulePath);
 
-    // save calling process
     memset(buf, 0, MAX_PATH * sizeof(wchar_t));
 
+    // save calling process
     ::GetModuleFileName(NULL, buf, MAX_PATH);
-    // :TODO: Ёбанный пиздец!
-    wstring caller(buf); transform(caller.begin(), caller.end(), caller.begin(), tolower);
+
+    wstring caller(buf); 
+    transform(caller.begin(), caller.end(), caller.begin(), tolower);
 
     _AtlModule.callerPath = bfs::wpath(caller);
     
@@ -58,9 +59,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     }
 
     logger->debug(L"BHO::DllMain"
-                  L" -> " + boost::lexical_cast<wstring>(instance) +
-                  L" -> " + boost::lexical_cast<wstring>(reason) +
-                  L" -> " + boost::lexical_cast<wstring>(reserved) +
+                  L" instance -> " + boost::lexical_cast<wstring>(instance) +
+                  L" reason -> " + boost::lexical_cast<wstring>(reason) +
+                  L" reserved -> " + boost::lexical_cast<wstring>(reserved) +
                   L" -> " + _AtlModule.moduleExec.wstring());
     
     // read addon manifest.json
@@ -89,11 +90,14 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
 
     // convert to GUID
     const GUID *guid = (GUID*)&(hash.digest().value()[0]);
-    LPOLESTR tmp;
+    
+    LPOLESTR tmp = nullptr;
     ::StringFromCLSID(*guid, &tmp);
-    _AtlModule.moduleCLSID = wstring(tmp);
-    ::CoTaskMemFree(tmp);
-
+    if (tmp) {
+      _AtlModule.moduleCLSID = wstring(tmp);
+      ::CoTaskMemFree(tmp);
+    }
+    
     // get hex string for debug purposes
     std::string s(hash.digest().hex_str_value());
     wstring md5hex(s.begin(), s.end());
@@ -105,7 +109,8 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     logger->debug(L"     md5:  " + md5hex);
     logger->debug(L"   clsid:  " + _AtlModule.moduleCLSID);
     
-    instance;
+    // instance; // ???
+
     result = _AtlModule.DllMain(reason, reserved); 
     logger->debug(L"BHO::DllMain _AtlModule.DllMain -> " + 
                   boost::lexical_cast<wstring>(result));

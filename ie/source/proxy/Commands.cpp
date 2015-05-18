@@ -239,8 +239,7 @@ HRESULT button_onClickCommand::exec()
     // invoke NativeControls
     logger->debug(L"button_onClickCommand::exec invoking NativeControls");
     hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
     hr = ::CoCreateInstance(CLSID_NativeControls, NULL, CLSCTX_LOCAL_SERVER, IID_INativeControls, (LPVOID*)&nativeControls);
     if (FAILED(hr) || !nativeControls) {

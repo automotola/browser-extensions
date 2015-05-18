@@ -110,7 +110,7 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
     std::wifstream stream(path.wstring());
     wstringpointer content(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
                                        (std::istreambuf_iterator<wchar_t>())));
-    if (content->length() == 0) {
+    if (content->empty()) {
         return Manifest::pointer();
     } 
     // logger->debug(L"manifest: " + *content);
@@ -148,7 +148,7 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
        lmanifest.content_scripts.push_back(_content_script);
     }
 
-    if (lmanifest.content_scripts.size() == 0) {
+    if (lmanifest.content_scripts.empty()) {
         logger->debug(L"No activations specified. Adding default activation");
         wstringvector matches;
         matches.push_back(L"file://*");

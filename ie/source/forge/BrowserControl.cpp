@@ -4,7 +4,6 @@
 
 #include "PopupWindow.h"
 
-
 /**
  * LifeCycle: Constructor
  */
@@ -265,11 +264,12 @@ void __stdcall BrowserControl::OnDocumentComplete(IDispatch *idispatch,
                       L"could not get IHTMLElement2");
         return;
     }
+
     long width, height;
     htmlElement2->get_scrollWidth(&width);
     htmlElement2->get_scrollHeight(&height);
-    width  = MIN(800, width);       // approx chrome's maximum size
-    height = MIN(500, height);      // 
+    width  = min(800, width);       // approx chrome's maximum size
+    height = min(500, height);      // 
 
     // Get page color
     CComVariant v;

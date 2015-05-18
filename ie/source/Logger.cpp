@@ -26,11 +26,12 @@ void Logger::initialize(const boost::filesystem::wpath& path)
   // read addon manifest.json
   auto scriptExtensions = ScriptExtensions::pointer(new ScriptExtensions(path, false));
   Manifest::pointer manifest = scriptExtensions->ParseManifest();
+
   if (!manifest) {
     debug(L"Logger::Logger could not read manifest");
     enabled = false;
   }
-  else if (manifest->logging.filename != L"") {
+  else if (!manifest->logging.filename.empty()) {
     // Replace environment variables in path so %LOCALAPPDATA%Low can be
     // used which is the only place where the low priviledged BHO process
     // can create files.
@@ -72,7 +73,7 @@ void Logger::write(const std::wstring& message, Logger::Level level)
         ::OutputDebugString(L"\n");
 #endif /* DEBUGGER */
 
-        if (m_filename != L"") {
+        if (!m_filename.empty()) {
             std::wofstream fs;
             fs.open(m_filename, std::ios::out | std::ios::app);
             if (level == Logger::ERR) {

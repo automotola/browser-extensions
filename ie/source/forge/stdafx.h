@@ -24,7 +24,7 @@
 
 // win32 
 #define WIN32_LEAN_AND_MEAN
-
+#define NOMINMAX
 // std
 #include <sstream>
 #include <fstream>
@@ -34,6 +34,7 @@
 #include <set>
 #include <numeric>
 #include <functional>
+#include <algorithm>
 
 // boost
 #include <boost/shared_ptr.hpp>

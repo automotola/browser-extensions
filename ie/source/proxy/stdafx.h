@@ -26,7 +26,7 @@
 #include <set>
 #include <numeric>
 #include <functional>
-#include <hash_map>
+#include <unordered_map>
 
 // boost
 #include <boost/shared_ptr.hpp>

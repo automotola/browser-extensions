@@ -1,5 +1,4 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#pragma once
 
 /**
  * Utilities with global scope
@@ -8,12 +7,12 @@
 
 /** macros */
 //#define ASSERT _ASSERTE
-#ifndef MIN
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-#endif /* MIN */
-#ifndef MAX
-#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
-#endif /* MAX */
+//#ifndef MIN
+//#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+//#endif /* MIN */
+//#ifndef MAX
+//#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+//#endif /* MAX */
 
 
 /** Logging */
@@ -136,4 +135,6 @@ static HRESULT GET_MSIE_VERSION(int *major, int *minor)
      return S_OK;
 }
 
-#endif /* __UTIL_H__ */
+#define BreakOnFailed(x) if (FAILED((x))) { break; }
+#define BreakOnNull(x, r) if (!(x)) { r = E_POINTER; break; }
+

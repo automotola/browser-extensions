@@ -90,7 +90,6 @@ CBrowserHelperObject::CBrowserHelperObject()
     }
 }
 
-
 /**
  * Interface: IObjectWithSite::SetSite
  */
@@ -103,7 +102,6 @@ STDMETHODIMP CBrowserHelperObject::SetSite(IUnknown *unknown)
   }
   return IObjectWithSiteImpl<CBrowserHelperObject>::SetSite(unknown);
 }
-
 
 /**
  * Event: OnConnect
