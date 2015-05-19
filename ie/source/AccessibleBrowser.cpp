@@ -5,8 +5,7 @@
 /**
  * Construction: Accessible
  */
-Accessible::Accessible(HWND hwnd, long id)
-    : id (id)
+Accessible::Accessible(HWND hwnd, long id) : id (id)
 {
     HRESULT hr;
     hr = ::AccessibleObjectFromWindow(hwnd, OBJID_WINDOW, IID_IAccessible, 
@@ -43,54 +42,53 @@ Accessible::~Accessible()
  */
 Accessible::vector Accessible::children() 
 {
-    HRESULT hr;
-    Accessible::vector ret;
+  HRESULT hr;
+  Accessible::vector ret;
+  std::vector<CComVariant> accessors;
 
+  long count = 0; // children count
+  long countObtained = 0;
+
+  for (;;) {
     if (!iaccessible) {
-        logger->error(L"Accessible::children invalid IAccessible");
-        return ret;
+      logger->error(L"Accessible::children invalid IAccessible");
+      break;
     }
 
-    // count children
-    long count;
     hr = iaccessible->get_accChildCount(&count);
     if (FAILED(hr)) {
-        logger->debug(L"Accessible::children failed to get child count"
-                      L" -> " + logger->parse(hr));
-        return ret;
+      logger->debug(L"Accessible::children failed to get child count -> " + logger->parse(hr));
+      break;
     }
-    
+
     // get accessors
-    CComVariant* accessors = new CComVariant[count];
-    long countObtained;
-    hr = ::AccessibleChildren(iaccessible, 0, count,
-                              accessors, &countObtained);
+    accessors.resize(count);
+    hr = ::AccessibleChildren(iaccessible, 0, count, &accessors[0], &countObtained);
     if (FAILED(hr)) {
-        logger->debug(L"Accessible::children failed to get accessors"
-                      L" -> " + logger->parse(hr));
-        return ret;
+      logger->debug(L"Accessible::children failed to get accessors -> " + logger->parse(hr));
+      break;
     }
 
     // iterate through accessors
-    for (long n = 0; n < countObtained; n++) {
-        CComVariant v = accessors[n];
-        if (v.vt != VT_DISPATCH) {
-            /*logger->debug(L"Accessible::children not an IAccessible"
-              L" -> " + boost::lexical_cast<wstring>(n));*/
-            continue;
-        } 
-        Accessible::pointer accessor =
-            Accessible::pointer(new Accessible(v.pdispVal, n + 1));
-        
-        CComBSTR name;
-        accessor->iaccessible->get_accName(CComVariant(CHILDID_SELF),
-                                           &name);
-        if (name) logger->debug(L"Accessible::children -> " + wstring(name));
+    for (long n = 0; n < countObtained; ++n) {
+      auto& v = accessors[n];
+      if (v.vt != VT_DISPATCH)
+        continue;
+      
+      auto accessor = Accessible::pointer(new Accessible(v.pdispVal, n + 1));
 
-        ret.push_back(accessor);
+      CComBSTR name = nullptr;
+      accessor->iaccessible->get_accName(CComVariant(CHILDID_SELF), &name);
+      if (name) 
+        logger->debug(L"Accessible::children -> " + wstring(name));
+
+      ret.push_back(accessor);
     }
-    
-    return ret;
+
+    break;
+  }
+
+  return ret;
 }
 
 

@@ -10,57 +10,60 @@
  */
 HWND WindowsMessage::GetToolbar(HWND ieframe, HWND *out_toolbar, HWND *out_target)
 {
-    if (out_toolbar) *out_toolbar = NULL;
-    if (out_target)  *out_target = NULL;
+  if (out_toolbar)
+    *out_toolbar = nullptr;
+  if (out_target)
+    *out_target = nullptr;
 
-    // List of window classes to traverse from IEFrame window to toolbar window where we place the icon:
-    // IE7 Command bar right of tabs
-    static const wchar_t* ie7_cmd_bar[] = { L"CommandBarClass", L"ReBarWindow32", L"ToolbarWindow32" };
-    // IE8+ Command bar right of tabs. Hidden by default on IE9+
-    static const wchar_t* ie8_cmd_bar[] = { L"CommandBarClass", L"ReBarWindow32", L"CommandToolbarBand", L"ToolbarWindow32" };
-    // IE9+ Favorites and Tools bar right of address bar
-    static const wchar_t* ie9_tools_bar[] = { L"WorkerW", L"ReBarWindow32", L"ControlBandClass", L"ToolbarWindow32" };
+  // List of window classes to traverse from IEFrame window to toolbar window where we place the icon:
+  // IE7 Command bar right of tabs
+  static const wchar_t* ie7_cmd_bar[] = { L"CommandBarClass", L"ReBarWindow32", L"ToolbarWindow32" };
+  // IE8+ Command bar right of tabs. Hidden by default on IE9+
+  static const wchar_t* ie8_cmd_bar[] = { L"CommandBarClass", L"ReBarWindow32", L"CommandToolbarBand", L"ToolbarWindow32" };
+  // IE9+ Favorites and Tools bar right of address bar
+  static const wchar_t* ie9_tools_bar[] = { L"WorkerW", L"ReBarWindow32", L"ControlBandClass", L"ToolbarWindow32" };
 
-    int ie_major = 0, ie_minor = 0;
-    if (FAILED(GET_MSIE_VERSION(&ie_major, &ie_minor))) {
-        logger->error(L"WindowsMessage::GetToolbar failed to determine IE version, assuming IE 9");
-        ie_major = 9;
-    }
+  int ie_major = 0, ie_minor = 0;
+  if (FAILED(GET_MSIE_VERSION(&ie_major, &ie_minor))) {
+    logger->error(L"WindowsMessage::GetToolbar failed to determine IE version, assuming IE 9");
+    ie_major = 9;
+  }
 
-    wstringvector class_list;
-    if (ie_major >= 9) {
-        class_list = wstringvector(ie9_tools_bar, staticarray_end(ie9_tools_bar));
-    }
-    else if (ie_major == 8) {
-        class_list = wstringvector(ie8_cmd_bar, staticarray_end(ie8_cmd_bar));
+  wstringvector class_list;
+  if (ie_major >= 9) {
+    class_list = wstringvector(ie9_tools_bar, staticarray_end(ie9_tools_bar));
+  }
+  else if (ie_major == 8) {
+    class_list = wstringvector(ie8_cmd_bar, staticarray_end(ie8_cmd_bar));
+  }
+  else {
+    class_list = wstringvector(ie7_cmd_bar, staticarray_end(ie7_cmd_bar));
+  }
+
+  logger->debug(L"WindowsMessage::GetToolbar class list"
+    L" -> " + boost::algorithm::join(class_list, L", "));
+
+  HWND window = ieframe;
+  HWND parent = ieframe;
+  wstringvector::const_iterator window_class = class_list.begin();
+  for (; window_class != class_list.end(); window_class++) {
+    parent = window;
+    if (ie_major >= 9 && (*window_class).c_str() == L"ToolbarWindow32") {
+      window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), L"Favorites and Tools Bar");
     }
     else {
-        class_list = wstringvector(ie7_cmd_bar, staticarray_end(ie7_cmd_bar));
+      window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), NULL);
     }
-
-    logger->debug(L"WindowsMessage::GetToolbar class list"
-                  L" -> " + boost::algorithm::join(class_list, L", "));
-
-    HWND window = ieframe;
-    HWND parent = ieframe;
-    wstringvector::const_iterator window_class = class_list.begin();
-    for (; window_class != class_list.end(); window_class++) {
-        parent = window;
-		if (ie_major >= 9 && (*window_class).c_str() == L"ToolbarWindow32") {
-			window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), L"Favorites and Tools Bar");
-		} else {
-			window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), NULL);
-		}
-        if (!window) {
-            logger->error(L"WindowsMessage::GetToolbar failed to get " + *window_class);
-            return NULL;
-        }
+    if (!window) {
+      logger->error(L"WindowsMessage::GetToolbar failed to get " + *window_class);
+      return nullptr;
     }
+  }
 
-    if (out_toolbar) *out_toolbar = window;
-    if (out_target)  *out_target  = parent;
-    
-    return window;
+  if (out_toolbar) *out_toolbar = window;
+  if (out_target)  *out_target = parent;
+
+  return window;
 }
 
 /**
@@ -100,7 +103,7 @@ bool WindowsMessage::AddToolbarIcon(HWND toolbar, HICON icon, int *index)
                                              TB_GETPRESSEDIMAGELIST,
                                              TB_GETDISABLEDIMAGELIST };
 
-    for (int i = 0; i < sizeof(secondary_lists) / sizeof(secondary_lists[0]); i++) {
+    for (auto i : secondary_lists) {
         HIMAGELIST secondary_list = reinterpret_cast<HIMAGELIST>(::SendMessage(toolbar, secondary_lists[i], 0, 0));
         if (!secondary_list) {
             // Failure to get the a secondary image list is not fatal. In fact it is
