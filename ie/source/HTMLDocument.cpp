@@ -19,15 +19,12 @@ const BSTR HTMLDocument::attrStyleType  = ::SysAllocString(L"text/css");
 /**
  * Construction
  */
-HTMLDocument::HTMLDocument(const CComQIPtr<IWebBrowser2,
-                                           &IID_IWebBrowser2>& webBrowser2)
-    : m_webBrowser2(webBrowser2)
+HTMLDocument::HTMLDocument(const CComQIPtr<IWebBrowser2, &IID_IWebBrowser2>& webBrowser2)
+  : m_webBrowser2(webBrowser2)
 {
-    HRESULT hr;
-    hr = OnConnect();
-    if (FAILED(hr)) {
-        logger->error(L"HTMLDocument::HTMLDocument failed to connect");
-    }
+  HRESULT hr = OnConnect();
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::HTMLDocument failed to connect");
 }
 
 /**
@@ -35,11 +32,9 @@ HTMLDocument::HTMLDocument(const CComQIPtr<IWebBrowser2,
  */
 HTMLDocument::~HTMLDocument()
 {
-    HRESULT hr;
-    hr = OnDisconnect();
-    if (FAILED(hr)) {
-        logger->error(L"HTMLDocument::~HTMLDocument failed to disconnect");
-    }
+  HRESULT hr = OnDisconnect();
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::~HTMLDocument failed to disconnect");
 }
 
 
@@ -92,42 +87,37 @@ HRESULT HTMLDocument::OnDisconnect()
  */
 HRESULT HTMLDocument::InjectDocument(const wstringpointer& content)
 {
-  if (!content)
-    return E_POINTER;
-
-  logger->debug(L"HTMLDocument::InjectBody -> " + (*content));
-
-  if (!m_htmlDocument3 || !m_htmlDocument2) {
-    return E_POINTER;
-  }
-
   HRESULT hr = S_OK;
-
-  // clear any existing content
-  hr = m_htmlDocument2->clear();
-  if (FAILED(hr)) {
-    logger->error(L"HTMLDocument::InjectBody failed to clear document"
-      L" -> " + logger->parse(hr));
-    return hr;
-  }
-
-  // inject content
   CComSafeArray<VARIANT> safeArray;
-  safeArray.Create(1, 0);
-  safeArray[0] = CComBSTR((*content).c_str());
-  hr = m_htmlDocument2->write(safeArray);
-  if (FAILED(hr)) {
-    logger->error(L"HTMLDocument::InjectBody failed to inject content"
-      L" -> " + logger->parse(hr));
-    return hr;
-  }
 
-  // close stream
-  hr = m_htmlDocument2->close();
-  if (FAILED(hr)) {
-    logger->error(L"HTMLDocument::InjectBody failed to close stream"
-      L" -> " + logger->parse(hr));
-    return hr;
+  for (;;) {
+    BreakOnNull(content, hr);
+    logger->debug(L"HTMLDocument::InjectBody -> " + (*content));
+
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
+    
+    // clear any existing content
+    hr = m_htmlDocument2->clear();
+    if (FAILED(hr)) {
+      logger->error(L"HTMLDocument::InjectBody failed to clear document -> " + logger->parse(hr));
+      break;
+    }
+
+    safeArray.Create(1, 0);
+    safeArray[0] = CComBSTR((*content).c_str());
+    hr = m_htmlDocument2->write(safeArray);
+    if (FAILED(hr)) {
+      logger->error(L"HTMLDocument::InjectBody failed to inject content -> " + logger->parse(hr));
+      break;
+    }
+
+    // close stream
+    hr = m_htmlDocument2->close();
+    if (FAILED(hr))
+      logger->error(L"HTMLDocument::InjectBody failed to close stream -> " + logger->parse(hr));
+ 
+    break;
   }
 
   return hr;
@@ -193,59 +183,40 @@ HRESULT HTMLDocument::InjectScript(const wstringpointer& content)
 HRESULT HTMLDocument::InjectScriptTag(const wstring& type, const wstring& src)
 {
   HRESULT hr = S_OK;
-  for (;;) {
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-      hr = E_POINTER;
-      break;
-    }
+  CComQIPtr<IHTMLElement> element = nullptr;
+  CComPtr<IHTMLElementCollection> heads = nullptr;
+  CComPtr<IDispatch> disp = nullptr;
 
-    CComQIPtr<IHTMLElement> element;
+  for (;;) {
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
+
     hr = m_htmlDocument2->createElement(HTMLDocument::tagScript, &element);
-    if (FAILED(hr))
-      break;
-    if (!element) {
-      hr = E_POINTER;
-      break;
-    };
+    BreakOnFailed(hr);
+    BreakOnNull(element, hr);
 
     CComQIPtr<IHTMLScriptElement> script(element);
     hr = script->put_defer(VARIANT_TRUE);
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
+
     hr = script->put_type(CComBSTR(type.c_str()));
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
     hr = script->put_src(CComBSTR(src.c_str()));
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
-    CComPtr<IHTMLElementCollection> heads;
     hr = m_htmlDocument3->getElementsByTagName(HTMLDocument::tagHead, &heads);
-    if (FAILED(hr))
-      break;
-    if (!heads) {
-      hr = E_POINTER;
-      break;
-    };
+    BreakOnFailed(hr);
+    BreakOnNull(heads, hr);
 
-    CComPtr<IDispatch> disp;
     hr = heads->item(CComVariant(0, VT_I4), CComVariant(0, VT_I4), &disp);
-    if (FAILED(hr))
-      break;
-    if (!disp) {
-      hr = E_POINTER;
-      break;
-    };
+    BreakOnFailed(hr);
+    BreakOnNull(disp, hr);
 
     hr = CComQIPtr<IHTMLDOMNode>(disp)->appendChild(CComQIPtr<IHTMLDOMNode>(script), &CComPtr<IHTMLDOMNode>());
-    if (FAILED(hr)) {
-      logger->debug(L"HTMLDocument::InjectScriptTag failed "
-        L" -> " + src +
-        L" -> " + logger->parse(hr));
-    }
+    if (FAILED(hr))
+      logger->debug(L"HTMLDocument::InjectScriptTag failed -> " + src + L" -> " + logger->parse(hr));
 
-    logger->debug(L"HTMLDocument::InjectScriptTag "
-      L" -> " + src);
+    logger->debug(L"HTMLDocument::InjectScriptTag -> " + src);
     break;
   }
 
@@ -258,29 +229,23 @@ HRESULT HTMLDocument::InjectScriptTag(const wstring& type, const wstring& src)
  */
 HRESULT HTMLDocument::InjectStyle(const wstringpointer& content)
 {
-    HRESULT hr;
+  HRESULT hr = S_OK;
+  CComQIPtr<IHTMLStyleSheet> style = nullptr;
 
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
-    }
+  for (;;) {
+    BreakOnNull(content, hr);
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
 
-    CComQIPtr<IHTMLStyleSheet> style;
     hr = m_htmlDocument2->createStyleSheet(L"", 1, &style);
-    if (FAILED(hr) || !style) {
-        logger->debug(L"HTMLDocument::InjectStyle"
-                      L" -> failed to create stylesheet");
-        return FAILED(hr) ? hr : E_POINTER; 
-    }
+    BreakOnFailed(hr);
+    BreakOnNull(style, hr);
 
-    hr = style->put_cssText(CComBSTR((*content).c_str()));
-    if (FAILED(hr)) {
-        logger->debug(L"HTMLDocument::InjectStyle"
-                      L" -> " + (*content) +
-                      L" -> failed to set content");
-        return hr;
-    }
+    hr = style->put_cssText(CComBSTR(content->c_str()));
+    break;
+  }
 
-    return S_OK;
+  return hr;
 }
 
 
@@ -289,35 +254,47 @@ HRESULT HTMLDocument::InjectStyle(const wstringpointer& content)
  */
 HRESULT HTMLDocument::InjectBody(const wstringpointer& content, BSTR where)
 {
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
-    }
+  HRESULT hr = S_OK;
+  CComPtr<IHTMLElement> body = nullptr;
 
-    CComPtr<IHTMLElement> body;
-    HRESULT hr = m_htmlDocument2->get_body(&body);
-    if (FAILED(hr) || !body) return FAILED(hr) ? hr : E_POINTER; 
-
-    return body->insertAdjacentHTML(where, CComBSTR((*content).c_str()));
+  for (;;) {
+    BreakOnNull(content, hr);
+    BreakOnNull(where, hr);
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
+    hr = m_htmlDocument2->get_body(&body);
+    BreakOnFailed(hr);
+    BreakOnNull(body, hr);
+    hr = body->insertAdjacentHTML(where, CComBSTR(content->c_str()));
+    break;
+  }
+  return hr;
 }
 
 
 /**
  * Inject content into document element
  */
-HRESULT HTMLDocument::InjectElementById(const wstring& id, 
-                                        const wstringpointer& content,
-                                        BSTR where)
+HRESULT HTMLDocument::InjectElementById(const wstring& id, const wstringpointer& content, BSTR where)
 {
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
-    }
+  HRESULT hr = S_OK;
+  CComPtr<IHTMLElement> element = nullptr;
 
-    CComPtr<IHTMLElement> element;
-    HRESULT hr = m_htmlDocument3->getElementById(CComBSTR(id.c_str()), 
-                                                 &element);
-    if (FAILED(hr) || !element) return FAILED(hr) ? hr : E_POINTER; 
+  for (;;) {
+    BreakOnNull(content, hr);
+    BreakOnNull(where, hr);
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
 
-    return element->insertAdjacentHTML(where, CComBSTR((*content).c_str()));
+    hr = m_htmlDocument3->getElementById(CComBSTR(id.c_str()), &element);
+    BreakOnFailed(hr);
+    BreakOnNull(element, hr);
+
+    hr = element->insertAdjacentHTML(where, CComBSTR(content->c_str()));
+    break;
+  }
+  
+  return hr;
 }
 
 
@@ -326,14 +303,18 @@ HRESULT HTMLDocument::InjectElementById(const wstring& id,
  */
 HRESULT HTMLDocument::ClickElementById(const wstring& id)
 {
-    if (!m_htmlDocument3 || !m_htmlDocument2) {
-        return E_POINTER;
-    }
+  HRESULT hr = S_OK;
+  CComPtr<IHTMLElement> element = nullptr;
+  for (;;) {
+    BreakOnNull(m_htmlDocument2, hr);
+    BreakOnNull(m_htmlDocument3, hr);
+    hr = m_htmlDocument3->getElementById(CComBSTR(id.c_str()), &element);
+    BreakOnFailed(hr);
+    BreakOnNull(element, hr);
 
-    CComPtr<IHTMLElement> element;
-    HRESULT hr = m_htmlDocument3->getElementById(CComBSTR(id.c_str()), 
-                                                 &element);
-    if (FAILED(hr) || !element) return FAILED(hr) ? hr : E_POINTER; 
-
-    return element->click();
+    hr = element->click();
+    break;
+  }
+  
+  return hr;
 }
