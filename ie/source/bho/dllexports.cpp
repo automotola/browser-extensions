@@ -22,10 +22,11 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
     HRESULT hr = S_OK; 
 
-    LPOLESTR tmp;
+    LPOLESTR tmp = nullptr;
     ::StringFromCLSID(rclsid, &tmp);
-    wstring requested_clsid = wstring(tmp);
-    ::CoTaskMemFree(tmp);
+    wstring requested_clsid(tmp);
+    if (tmp)
+      ::CoTaskMemFree(tmp);
 
     // BrowserHelperObject
     wstring bho = VENDOR_UUID_STR(VENDOR_UUID_BrowserHelperObject);
