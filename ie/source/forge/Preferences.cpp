@@ -61,28 +61,24 @@ Preferences::~Preferences()
  */
 LONG Preferences::Load()
 {
-	HKEY key;
-    LONG result;
+  HKEY key;
+  LONG result;
 
-    result = ::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                            NULL, KEY_READ, &key);
-    if (result != ERROR_SUCCESS) {
-        goto done;
-    }
+  for (;;) {
+    result = ::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), NULL, KEY_READ, &key);
+    if (result != ERROR_SUCCESS)
+      break;
     
-    result = this->RegistryValue(key, L"Data", &m_local);
-    if (result != ERROR_SUCCESS) {
-        goto done;
-    }
-
-    result = this->RegistryValue(key, L"Default", &m_default);
-    if (result != ERROR_SUCCESS) {
-        goto done;
-    }
-
-done:        
-    ::RegCloseKey(key);
-    return result;
+    result = RegistryValue(key, L"Data", &m_local);
+    if (result != ERROR_SUCCESS)
+      break;
+    
+    result = RegistryValue(key, L"Default", &m_default);
+    break;
+  }
+  
+  ::RegCloseKey(key);
+  return result;
 }
 
 
@@ -91,33 +87,34 @@ done:
  */
 LONG Preferences::Save(const wstringpointer& local)
 {
-	HKEY key;
-    LONG result;
+  HKEY key;
+  LONG result;
 
-    if (!local || local->length() == 0) {
-        return ERROR_SUCCESS;
+  for (;;) {
+    if (!local) {
+      result = ERROR_SUCCESS;
+      break;
     }
 
-    result = ::RegCreateKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                              NULL, NULL, 
-                              REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE,
-                              NULL, &key, NULL);
-    if (result != ERROR_SUCCESS) {
-        goto done;
+    if (local->empty()) {
+      result = ERROR_SUCCESS;
+      break;
     }
 
-    result = ::RegSetValueEx(key, L"Data", 
-                             NULL, REG_SZ, 
-                             (BYTE*)local->c_str(), 
-                             (DWORD)(local->length() * 2) + 1);
-    if (result != ERROR_SUCCESS) {
-        goto done;
-    }
+    result = ::RegCreateKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 0, 0, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE, 0, &key, 0);
+    if (result != ERROR_SUCCESS)
+      break;
+
+    result = ::RegSetValueEx(key, L"Data", 0, REG_SZ, (BYTE*)local->c_str(), (DWORD)(local->length() * 2) + 1);
+    if (result != ERROR_SUCCESS)
+      break;
+
     m_local = local;
-    
-done:
-    ::RegCloseKey(key);
-    return result;
+    break;
+  }
+
+  ::RegCloseKey(key);
+  return result;
 }
 
 
@@ -126,12 +123,10 @@ done:
  */
 bool Preferences::IsFirstRunAfterInstall()
 {
-    LONG result;
-    HKEY key;
-    result = (::RegOpenKeyExW(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                              NULL, KEY_READ, &key));
-    ::RegCloseKey(key);
-    return (result != ERROR_SUCCESS);
+  HKEY key;
+  LONG result = ::RegOpenKeyExW(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 0, KEY_READ, &key);
+  ::RegCloseKey(key);
+  return (result != ERROR_SUCCESS);
 }
 
 
@@ -246,8 +241,7 @@ wstring Preferences::get(const wstring& key)
     }
 
     HKEY hkey;
-    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                       NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
+    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
         logger->debug(L"Preferences::get could not open key"
                       L" -> " + key);
         goto done;
@@ -318,36 +312,34 @@ wstring Preferences::set(const wstring& key, const wstring& value)
  */
 wstringvector Preferences::keys()
 {
-    wstringvector ret;
+  wstringvector ret;
 
-    logger->debug(L"Preferences::keys"
-                  L" -> " + m_currentUser);
+  logger->debug(L"Preferences::keys"
+    L" -> " + m_currentUser);
 
-    HKEY hkey;
-    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                       NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
-        logger->error(L"Preferences::keys could not open registry key");
-        return ret;
-    }
-
-    wchar_t key[MAX_PATH + 1], value[MAX_PATH + 1];
-    DWORD key_length = sizeof(key) / sizeof(*key);
-    DWORD value_length = key_length;
-    DWORD type = 0, index = 0;
-    while (index < 0x1000 &&
-           ::RegEnumValue(hkey, index, key, &key_length, NULL, &type, 
-                          reinterpret_cast<LPBYTE>(value), &value_length)  
-           != ERROR_NO_MORE_ITEMS) {
-        if (type == REG_SZ && wstring(key) != L"Default") { // TODO @deprecate Default key
-            ret.push_back(key);
-        }
-        key_length = sizeof(key) / sizeof(*key);
-        value_length = key_length;
-        index++;
-    }
-    ::RegCloseKey(hkey);
-
+  HKEY hkey;
+  if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(),
+    NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
+    logger->error(L"Preferences::keys could not open registry key");
     return ret;
+  }
+
+  wchar_t key[MAX_PATH + 1] = { 0 };
+  wchar_t value[MAX_PATH + 1] = { 0 };
+  DWORD key_length = _countof(key);
+  DWORD value_length = key_length;
+  DWORD type = 0, index = 0;
+  while (index < 0x1000 && ::RegEnumValue(hkey, index, key, &key_length, 0, &type, (BYTE*)value, &value_length) != ERROR_NO_MORE_ITEMS) {
+    if (type == REG_SZ && wstring(key) != L"Default") { // TODO @deprecate Default key
+      ret.push_back(key);
+    }
+    key_length = _countof(key);
+    value_length = key_length;
+    ++index;
+  }
+  ::RegCloseKey(hkey);
+
+  return ret;
 }
 
 
@@ -356,33 +348,31 @@ wstringvector Preferences::keys()
  */
 wstringmap Preferences::all()
 {
-    wstringmap ret;
+  wstringmap ret;
 
-    HKEY hkey;
-    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                       NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
-        logger->error(L"Preferences::keys could not open registry key");
-        return ret;
-    }
-
-    wchar_t key[MAX_PATH + 1], value[MAX_PATH + 1];
-    DWORD key_length = sizeof(key) / sizeof(*key);
-    DWORD value_length = key_length;
-    DWORD type = 0, index = 0;
-    while (index < 0x1000 &&
-           ::RegEnumValue(hkey, index, key, &key_length, NULL, &type, 
-                          reinterpret_cast<LPBYTE>(value), &value_length)  
-           != ERROR_NO_MORE_ITEMS) {
-        if (type == REG_SZ && wstring(key) != L"Default") {
-            ret[key] = value;
-        }
-        key_length = sizeof(key) / sizeof(*key);
-        value_length = key_length;
-        index++;
-    }
-    ::RegCloseKey(hkey);
-
+  HKEY hkey;
+  if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(),
+    NULL, KEY_READ, &hkey) != ERROR_SUCCESS) {
+    logger->error(L"Preferences::keys could not open registry key");
     return ret;
+  }
+
+  wchar_t key[MAX_PATH + 1] = { 0 };
+  wchar_t value[MAX_PATH + 1] = { 0 };
+  DWORD key_length = _countof(key);
+  DWORD value_length = key_length;
+  DWORD type = 0, index = 0;
+  while (index < 0x1000 && ::RegEnumValue(hkey, index, key, &key_length, 0, &type, reinterpret_cast<LPBYTE>(value), &value_length) != ERROR_NO_MORE_ITEMS) {
+    if (type == REG_SZ && wstring(key) != L"Default") {
+      ret[key] = value;
+    }
+    key_length = _countof(key);;
+    value_length = key_length;
+    index++;
+  }
+  ::RegCloseKey(hkey);
+
+  return ret;
 }
 
 
@@ -391,44 +381,38 @@ wstringmap Preferences::all()
  */
 bool Preferences::clear(const wstring& name)
 {
-    logger->debug(L"Preferences::clear"
-                  L" -> " + m_currentUser + 
-                  L" -> " + name);
-    
-    HKEY hkey;
-    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                       NULL, KEY_SET_VALUE, &hkey) != ERROR_SUCCESS) {
-        logger->error(L"Preferences::clear could not open registry key");
-        return false;
-    }
+  logger->debug(L"Preferences::clear -> " + m_currentUser + L" -> " + name);
 
-    LONG result = ::RegDeleteValue(hkey, name.c_str());
-    ::RegCloseKey(hkey);
+  HKEY hkey;
+  if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(),
+    NULL, KEY_SET_VALUE, &hkey) != ERROR_SUCCESS) {
+    logger->error(L"Preferences::clear could not open registry key");
+    return false;
+  }
 
-    return result == ERROR_SUCCESS;
+  LONG result = ::RegDeleteValue(hkey, name.c_str());
+  ::RegCloseKey(hkey);
+
+  return result == ERROR_SUCCESS;
 }
 
 
 bool Preferences::clear()
 {
-    logger->debug(L"Preferences::clear"
-                  L" -> " + m_currentUser);
+  logger->debug(L"Preferences::clear -> " + m_currentUser);
 
-    HKEY hkey;
-    if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 
-                       NULL, KEY_SET_VALUE, &hkey) != ERROR_SUCCESS) {
-        logger->error(L"Preferences::clear could not open registry key");
-        return false;
-    }
-    
-    bool ret = true;
+  HKEY hkey;
+  if (::RegOpenKeyEx(HKCU_IE_WRITEABLE, m_currentUser.c_str(), 0, KEY_SET_VALUE, &hkey) != ERROR_SUCCESS) {
+    logger->error(L"Preferences::clear could not open registry key");
+    return false;
+  }
 
-    wstringvector keys = this->keys();
-    wstringvector::const_iterator i;
-    for (i = keys.begin(); i != keys.end(); i++) {
-        ret &= (::RegDeleteValue(hkey, i->c_str()) == ERROR_SUCCESS);
-    }    
-    ::RegCloseKey(hkey);
-    
-    return ret;
+  bool ret = true;
+  wstringvector const k = keys();
+  for (auto i : k)
+    ret &= (::RegDeleteValue(hkey, i.c_str()) == ERROR_SUCCESS);
+
+  ::RegCloseKey(hkey);
+
+  return ret;
 }

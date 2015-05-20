@@ -34,16 +34,12 @@ void CNativeMessaging::FinalRelease()
  */
 STDMETHODIMP CNativeMessaging::InterfaceSupportsErrorInfo(REFIID riid)
 {
-	static const IID* const arr[] = 
-	{
-		&IID_INativeMessaging
-	};
+  static const IID* const arr[] = { &IID_INativeMessaging };
 
-	for (int i=0; i < sizeof(arr) / sizeof(arr[0]); i++)
-	{
-		if (InlineIsEqualGUID(*arr[i],riid))
+	for (auto iid : arr)
+		if (InlineIsEqualGUID(*iid, riid))
 			return S_OK;
-	}
+
 	return S_FALSE;
 }
 
@@ -60,23 +56,16 @@ STDMETHODIMP CNativeMessaging::tabs_set(BSTR uuid,
                                         UINT instanceId,
                                         BSTR url, BSTR title, BOOL focused)
 {
-    /*logger->debug(L"NativeMessaging::tabs_set"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(instanceId) +
-                  L" -> " + wstring(url) +
-                  L" -> " + wstring(title) +
-                  L" -> " + boost::lexical_cast<wstring>(focused));*/
+  if (focused) {
+    m_activeTab.id = instanceId;
+    m_activeTab.url = url;
+    m_activeTab.title = title;
+    m_activeTab.selected = focused ? true : false;
+  }
 
-    if (focused) {
-        m_activeTab.id       = instanceId;
-        m_activeTab.url      = url;
-        m_activeTab.title    = title;
-        m_activeTab.selected = focused ? true : false;
-    }
+  // TODO save tab info
 
-    // TODO save tab info
-
-    return S_OK;
+  return S_OK;
 }
 
 
@@ -208,13 +197,10 @@ STDMETHODIMP CNativeMessaging::unload(BSTR uuid, unsigned int instanceId)
  */
 HRESULT CNativeMessaging::shutdown()
 {
-    logger->debug(L"CNativeMessaging::shutdown "
-                  L" -> " + boost::lexical_cast<wstring>(m_dwRef));
-
-    this->bg_callbacks.clear();
-    this->fg_callbacks.clear();
-    
-    return S_OK;
+  logger->debug(L"CNativeMessaging::shutdown -> " + boost::lexical_cast<wstring>(m_dwRef));
+  bg_callbacks.clear();
+  fg_callbacks.clear();
+  return S_OK;
 }
 
 
@@ -223,23 +209,11 @@ HRESULT CNativeMessaging::shutdown()
  *
  * FG <= BG
  */
-STDMETHODIMP CNativeMessaging::fg_listen(BSTR _uuid, UINT tabId,
-                                         BSTR _type, 
-                                         IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::fg_listen(BSTR _uuid, UINT tabId, BSTR _type, IDispatch *callback, IDispatch *error)
 {
-    wstring uuid(_uuid), type(_type);
-
-    /*logger->debug(L"CNativeMessaging::fg_listen"
-                  L" -> " + uuid +
-                  L" -> " + boost::lexical_cast<wstring>(tabId) +
-                  L" -> " + type +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
-
-    this->fg_callbacks[uuid].push_back
-        (Callback::pointer(new Callback(tabId, type, callback, error)));
-
-    return S_OK;
+  wstring uuid(_uuid), type(_type);
+  fg_callbacks[uuid].push_back(Callback::pointer(new Callback(tabId, type, callback, error)));
+  return S_OK;
 }
 
 
@@ -248,30 +222,17 @@ STDMETHODIMP CNativeMessaging::fg_listen(BSTR _uuid, UINT tabId,
  *
  * FG => FG(*)
  */
-STDMETHODIMP CNativeMessaging::fg_broadcast(BSTR _uuid, 
-                                            BSTR _type, BSTR _content, 
-                                            IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::fg_broadcast(BSTR _uuid, BSTR _type, BSTR _content, IDispatch *callback, IDispatch *error)
 {
-    wstring uuid(_uuid), type(_type), content(_content);
+  wstring uuid(_uuid), type(_type), content(_content);
 
-    /*logger->debug(L"CNativeMessaging::fg_broadcast"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + content +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
+  HRESULT hr;
+  auto& v = fg_callbacks[uuid];
+  for (auto i : v)
+    if (i->type == L"*" || i->type == type)
+      hr = i->Dispatch(content, callback);
 
-    HRESULT hr;
-    Callback::vector v = fg_callbacks[uuid];
-    for (Callback::vector::const_iterator i = v.begin(); i != v.end(); i++) {
-        Callback::pointer fg_callback = *i;
-        if (fg_callback->type == L"*" || 
-            fg_callback->type == type) {
-            hr = fg_callback->Dispatch(content, callback);
-        }
-    }    
-
-    return S_OK;
+  return S_OK;
 }
 
 
@@ -280,31 +241,20 @@ STDMETHODIMP CNativeMessaging::fg_broadcast(BSTR _uuid,
  *
  * FG => FG(1)
  */
-STDMETHODIMP CNativeMessaging::fg_toFocussed(BSTR _uuid, 
-                                             BSTR _type, BSTR _content, 
-                                             IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::fg_toFocussed(BSTR _uuid, BSTR _type, BSTR _content, IDispatch *callback, IDispatch *error)
 {
-    wstring uuid(_uuid), type(_type), content(_content);
+  wstring uuid(_uuid), type(_type), content(_content);
 
-    /*logger->debug(L"CNativeMessaging::fg_toFocussed"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + content +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
+  HRESULT hr;
+  auto& v = fg_callbacks[uuid];
+  for (auto i : v) {
+    if (i->tabId != m_activeTab.id) 
+      continue;
+    if (i->type == L"*" || i->type == type)
+      hr = i->Dispatch(content, callback);
+  }
 
-    HRESULT hr;
-    Callback::vector v = fg_callbacks[uuid];
-    for (Callback::vector::const_iterator i = v.begin(); i != v.end(); i++) {
-        Callback::pointer fg_callback = *i;
-        if (fg_callback->tabId != m_activeTab.id) continue; 
-        if (fg_callback->type == L"*" || 
-            fg_callback->type == type) {
-            hr = fg_callback->Dispatch(content, callback);
-        }
-    }    
-
-    return S_OK;
+  return S_OK;
 }
 
 /**
@@ -312,28 +262,17 @@ STDMETHODIMP CNativeMessaging::fg_toFocussed(BSTR _uuid,
  *
  * FG => BG
  */
-STDMETHODIMP CNativeMessaging::fg_broadcastBackground(BSTR _uuid, 
-                                                      BSTR _type, BSTR _content, 
-                                                      IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::fg_broadcastBackground(BSTR _uuid, BSTR _type, BSTR _content, IDispatch *callback, IDispatch *error)
 {
     wstring uuid(_uuid), type(_type), content(_content);
 
-    /*logger->debug(L"CNativeMessaging::fg_broadcastBackground"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + content +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
-
     HRESULT hr;
-    Callback::vector v = bg_callbacks[uuid];
-    for (Callback::vector::const_iterator i = v.begin(); i != v.end(); i++) {
-        Callback::pointer bg_callback = *i;
-        if (bg_callback->type == L"*" && type == L"bridge") continue;
-        if (bg_callback->type == L"*" || 
-            bg_callback->type == type) {
-            hr = bg_callback->Dispatch(content, callback);
-        }
+    auto& v = bg_callbacks[uuid];
+    for (auto i : v) {
+      if (i->type == L"*" && type == L"bridge") 
+        continue;
+      if (i->type == L"*" || i->type == type)
+        hr = i->Dispatch(content, callback);
     }
 
     return S_OK;
@@ -345,20 +284,10 @@ STDMETHODIMP CNativeMessaging::fg_broadcastBackground(BSTR _uuid,
  *
  * BG <= FG
  */
-STDMETHODIMP CNativeMessaging::bg_listen(BSTR _uuid, 
-                                         BSTR _type, 
-                                         IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::bg_listen(BSTR _uuid, BSTR _type, IDispatch *callback, IDispatch *error)
 {
     wstring uuid(_uuid), type(_type);
-
-    /*logger->debug(L"CNativeMessaging::bg_listen"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
-
-    this->bg_callbacks[uuid].push_back
-        (Callback::pointer(new Callback(type, callback, error)));
+    bg_callbacks[uuid].push_back(Callback::pointer(new Callback(type, callback, error)));
 
     return S_OK;
 }
@@ -369,29 +298,16 @@ STDMETHODIMP CNativeMessaging::bg_listen(BSTR _uuid,
  *
  * BG => FG(*)
  */
-STDMETHODIMP CNativeMessaging::bg_broadcast(BSTR _uuid, 
-                                            BSTR _type, BSTR _content, 
-                                            IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::bg_broadcast(BSTR _uuid, BSTR _type, BSTR _content, IDispatch *callback, IDispatch *error)
 {
-    wstring uuid(_uuid), type(_type), content(_content);
-    /*logger->debug(L"CNativeMessaging::bg_broadcast"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + content +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
+  wstring uuid(_uuid), type(_type), content(_content);
+  HRESULT hr;
+  auto& v = fg_callbacks[uuid];
+  for (auto i : v)
+    if (i->type == L"*" || i->type == type)
+      hr = i->Dispatch(content, callback);
 
-    HRESULT hr;
-    Callback::vector v = fg_callbacks[uuid];
-    for (Callback::vector::const_iterator i = v.begin(); i != v.end(); i++) {
-        Callback::pointer fg_callback = *i;
-        if (fg_callback->type == L"*" || 
-            fg_callback->type == type) {
-            hr = fg_callback->Dispatch(content, callback);
-        }
-    }    
-
-    return S_OK;
+  return S_OK;
 }
 
 
@@ -400,28 +316,14 @@ STDMETHODIMP CNativeMessaging::bg_broadcast(BSTR _uuid,
  *
  * BG => FG(1)
  */
-STDMETHODIMP CNativeMessaging::bg_toFocussed(BSTR _uuid, 
-                                             BSTR _type, BSTR _content, 
-                                             IDispatch *callback, IDispatch *error)
+STDMETHODIMP CNativeMessaging::bg_toFocussed(BSTR _uuid, BSTR _type, BSTR _content, IDispatch *callback, IDispatch *error)
 {
-    wstring uuid(_uuid), type(_type), content(_content);
-    /*logger->debug(L"CNativeMessaging::bg_toFocussed"
-                  L" -> " + uuid +
-                  L" -> " + type +
-                  L" -> " + content +
-                  L" -> " + boost::lexical_cast<wstring>(callback) +
-                  L" -> " + boost::lexical_cast<wstring>(error));*/
-    
-    HRESULT hr;
-    Callback::vector v = fg_callbacks[uuid];
-    for (Callback::vector::const_iterator i = v.begin(); i != v.end(); i++) {
-        Callback::pointer fg_callback = *i;
-        if (fg_callback->tabId != m_activeTab.id) continue; 
-        if (fg_callback->type == L"*" || 
-            fg_callback->type == type) {
-            hr = fg_callback->Dispatch(content, callback);
-        }
-    }    
+  wstring uuid(_uuid), type(_type), content(_content);
+  HRESULT hr;
+  auto& v = fg_callbacks[uuid];
+  for (auto i : v)
+    if (i->type == L"*" || i->type == type)
+      hr = i->Dispatch(content, callback);
 
-    return S_OK;
+  return S_OK;
 }
