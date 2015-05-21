@@ -78,45 +78,28 @@ STDMETHODIMP CNativeMessaging::tabs_set(BSTR uuid,
  */
 STDMETHODIMP CNativeMessaging::tabs_active(BSTR uuid, IDispatch *callback, UINT *out_tabId)
 {
-    HRESULT hr;
-
-    /*logger->debug(L"NativeMessaging::tabs_active"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(callback));*/
-
+  HRESULT hr = S_OK;
+  CComPtr<ITypeInfo> tabT = nullptr;
+  CComPtr<IUnknown>  tabI = nullptr;
+  for (;;) {
+    BreakOnNull(out_tabId, hr);
     *out_tabId = m_activeTab.id;
 
-    if (!callback) {
-        logger->error(L"NativeMessaging::tabs_active no callback");
-        return S_OK;
-    }
+    BreakOnNull(callback, hr);
 
-    CComPtr<ITypeInfo> tabT;
-    hr = ::CreateDispTypeInfo(&Tab::Interface, LOCALE_SYSTEM_DEFAULT,
-                              &tabT);
-    if (FAILED(hr) || !tabT) {
-        logger->error(L"NativeMessaging::tabs_active "
-                      L"failed to create tabT"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
-    CComPtr<IUnknown> tabI;
+    hr = ::CreateDispTypeInfo(&Tab::Interface, LOCALE_SYSTEM_DEFAULT, &tabT);
+    BreakOnFailed(hr);
+    BreakOnNull(tabT, hr);
+
     hr = ::CreateStdDispatch(NULL, &m_activeTab, tabT, &tabI);
-    if (FAILED(hr) || !tabI) {
-        logger->error(L"NativeMessaging::tabs_active "
-                      L"failed to create tabI"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
+    BreakOnFailed(hr);
+    BreakOnNull(tabI, hr);
 
     hr = CComDispatchDriver(callback).Invoke1((DISPID)0, &CComVariant(tabI));
-    if (FAILED(hr)) {    
-        logger->error(L"NativeMessaging::tabs_active "
-                      L"failed to invoke callback"
-                      L" -> " + logger->parse(hr));
-    }
+    break;
+  }
 
-    return hr;
+  return hr;
 }
 
 
@@ -128,13 +111,8 @@ STDMETHODIMP CNativeMessaging::tabs_active(BSTR uuid, IDispatch *callback, UINT 
  */
 STDMETHODIMP CNativeMessaging::load(BSTR uuid, unsigned int instanceId)
 {
-    /*logger->debug(L"CNativeMessaging::load"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(instanceId));*/
-    
-    m_clients[uuid].insert(instanceId);
-
-    return S_OK;
+  m_clients[uuid].insert(instanceId);
+  return S_OK;
 }
 
 
@@ -166,27 +144,24 @@ STDMETHODIMP CNativeMessaging::unload(BSTR uuid, unsigned int instanceId)
                   L" -> " + boost::lexical_cast<wstring>(instanceId));
 
     // clean up any callbacks registered for this instance
-    Callback::vector v = fg_callbacks[uuid];
+    auto& v = fg_callbacks[uuid];
     v.erase(std::remove_if(v.begin(), v.end(), delete_callback(instanceId)), v.end());
-    fg_callbacks[uuid] = v;
 
     m_clients[uuid].erase(instanceId);
     if (m_clients[uuid].empty()) {
         logger->debug(L"CNativeMessaging::unload "
                       L"shutting down extension"
                       L" -> " + wstring(uuid));
-        this->bg_callbacks.erase(uuid);
-        this->fg_callbacks.erase(uuid);
+        bg_callbacks.erase(uuid);
+        fg_callbacks.erase(uuid);
         m_clients.erase(uuid);
         logger->debug(L"CNativeMessaging::unload done");
     }
 
-    logger->debug(L"CNativeMessaging::unload clients remaining: " +
-                  boost::lexical_cast<wstring>(m_clients.size()));
+    logger->debug(L"CNativeMessaging::unload clients remaining: " + boost::lexical_cast<wstring>(m_clients.size()));
 
-    if (m_clients.empty()) {
-        return this->shutdown();
-    } 
+    if (m_clients.empty())
+        return shutdown(); 
 
     return S_OK;
 }
