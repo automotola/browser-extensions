@@ -26,77 +26,58 @@ ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
  */
 void ScriptExtensions::Reload()
 {
-    // read manifest.json
-    manifest = ParseManifest(pathManifest);
-    if (!manifest) {
-        logger->debug(L"ScriptExtensions::Reload could not load manifest: " + 
-                      pathManifest.wstring());
-        // TODO user-visible error please
-        // TODO exit BHO cleanly
-        return;
-    }
-    manifest->dump();
+  // read manifest.json
+  manifest = ParseManifest(pathManifest);
+  if (!manifest) {
+    logger->debug(L"ScriptExtensions::Reload could not load manifest: " + pathManifest.wstring());
+    // TODO user-visible error please
+    // TODO exit BHO cleanly
+    return;
+  }
+  manifest->dump();
 
-    // cache background_page
-    bfs::wpath path = m_path / manifest->background_page;
-    if (!bfs::exists(path)) {
-        logger->error(L"ScriptExtensions::Reload background_page not found: " +
-                      path.wstring());
-    }
-    std::wifstream stream(path.wstring());
-    background_page = 
-        wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
-                                   (std::istreambuf_iterator<wchar_t>())));    
+  // cache background_page
+  bfs::wpath path = m_path / manifest->background_page;
+  if (!bfs::exists(path)) {
+    logger->error(L"ScriptExtensions::Reload background_page not found: " + path.wstring());
+  }
+  std::wifstream stream(path.wstring());
+  background_page =
+    wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
+    (std::istreambuf_iterator<wchar_t>())));
 
-    // cache content_scripts & styles
-    Manifest::ContentScripts::const_iterator script = manifest->content_scripts.begin();
-    for (; script != manifest->content_scripts.end(); script++) {
-        wstringvector::const_iterator name = script->js.begin();
-        for (; name != script->js.end(); name++) {
-            bfs::wpath path = m_path / *name;
-            if (!bfs::exists(path)) {
-                logger->error(L"ScriptExtensions::Reload content_script not found: " + 
-                              path.wstring()); 
-                m_scripts[*name] = wstringpointer();
-                ::MessageBox(NULL,
-                             wstring(L"You have an invalid script specified "
-                                     L"in your config.json: " +
-                                     path.wstring()).c_str(),
-                             VENDOR_COMPANY_NAME,
-                             MB_TASKMODAL | MB_ICONEXCLAMATION);
-                continue;
-            }
-            std::wifstream stream(path.wstring());
-            wstringpointer script(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
-                                              (std::istreambuf_iterator<wchar_t>())));
-            m_scripts[*name] = script;
-            logger->info(L"ScriptExtension::Reload cached content_script js: " +
-                         path.wstring());         
-        }
-        name = script->css.begin();
-        for (; name != script->css.end(); name++) {
-            bfs::wpath path = m_path / *name;
-            if (!bfs::exists(path)) {
-                logger->error(L"ScriptExtensions::Reload content_script not found: " + 
-                              path.wstring()); 
-                ::MessageBox(NULL,
-                             wstring(L"You have an invalid stylesheet specified "
-                                     L"in your config.json: " +
-                                     path.wstring()).c_str(),
-                             VENDOR_COMPANY_NAME,
-                             MB_TASKMODAL | MB_ICONEXCLAMATION);
-
-                m_styles[*name] = wstringpointer();
-                continue;
-            }
-            std::wifstream stream(path.wstring());
-            wstringpointer style(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
-                                             (std::istreambuf_iterator<wchar_t>())));
-            m_styles[*name] = style;
-            logger->info(L"ScriptExtension::Reload cached content_script css: " + 
-                         path.wstring());
-        }
+  // cache content_scripts & styles
+  for (auto& script : manifest->content_scripts) {
+    for (auto& name : script.js) {
+      bfs::wpath path = m_path / name;
+      if (!bfs::exists(path)) {
+        logger->error(L"ScriptExtensions::Reload content_script not found: " + path.wstring());
+        m_scripts[name] = wstringpointer();
+        ::MessageBox(0, wstring(L"You have an invalid script specified in your config.json: " + path.wstring()).c_str(), VENDOR_COMPANY_NAME, MB_TASKMODAL | MB_ICONEXCLAMATION);
+        continue;
+      }
+      std::wifstream stream(path.wstring());
+      wstringpointer script(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
+        (std::istreambuf_iterator<wchar_t>())));
+      m_scripts[name] = script;
+      logger->info(L"ScriptExtension::Reload cached content_script js: " + path.wstring());
     }
+
+    for (auto& name : script.css) {
+      bfs::wpath path = m_path / name;
+      if (!bfs::exists(path)) {
+        logger->error(L"ScriptExtensions::Reload content_script not found: " + path.wstring());
+        ::MessageBox(NULL, wstring(L"You have an invalid stylesheet specified in your config.json: " + path.wstring()).c_str(), VENDOR_COMPANY_NAME, MB_TASKMODAL | MB_ICONEXCLAMATION);
+        m_styles[name] = wstringpointer();
+        continue;
+      }
+      std::wifstream stream(path.wstring());
+      wstringpointer style(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
+        (std::istreambuf_iterator<wchar_t>())));
+      m_styles[name] = style;
+      logger->info(L"ScriptExtension::Reload cached content_script css: " + path.wstring());
+    }
+  }
 }
 
 
@@ -133,9 +114,8 @@ Manifest::pointer ScriptExtensions::ParseManifest(const bfs::wpath& path)
     lmanifest.permissions = json_util::wstrings_to_vector(permissions);
 
     json_spirit::wArray content_scripts = json_util::wfind_array(json, L"content_scripts");
-    json_spirit::wArray::const_iterator i = content_scripts.begin();
-    for (; i != content_scripts.end(); i++) {
-        json_spirit::wObject content_script = i->get_obj();
+    for (auto& i : content_scripts) {
+        json_spirit::wObject content_script = i.get_obj();
         json_spirit::wArray matches = json_util::wfind_array(content_script, L"matches");
         Manifest::ContentScript _content_script = {
             json_util::wfind_strarray(content_script, L"matches"),
