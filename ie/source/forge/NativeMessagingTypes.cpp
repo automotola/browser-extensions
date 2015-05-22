@@ -80,6 +80,7 @@ HRESULT Callback::Dispatch(const wstring& content, IDispatch *reply)
         L" -> " + logger->parse(hr) +
         L" -> " + content;
     logger->error(e);
+    
     CComQIPtr<IDispatchEx> errorex(this->error);
     hr = CComDispatchDriver(errorex).Invoke1((DISPID)0,
                                              &CComVariant(e.c_str()));

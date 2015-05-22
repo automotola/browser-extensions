@@ -12,16 +12,13 @@ PopupWindow::PopupWindow(const wstring& uuid, POINT point, const wstring& url)
     : hiddenBrowser(this, uuid, true, true), 
       uuid(uuid), url(url)
 {
-    logger->debug(L"PopupWindow::PopupWindow"
-                  L" -> " + uuid);
+    logger->debug(L"PopupWindow::PopupWindow -> " + uuid);
     
     // get screen metrics
     DWORD screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
-    if (point.x > (int)(screenWidth / 2)) {
-        this->alignment = PopupWindow::left;
-    } else {
-        this->alignment = PopupWindow::right;
-    }
+    alignment = (point.x > (int)(screenWidth / 2))
+      ? PopupWindow::left
+      : PopupWindow::right;
 }
 
 
@@ -90,14 +87,14 @@ LRESULT PopupWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& han
  */
 LRESULT PopupWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    if (!this->hiddenBrowser) {
+    if (!hiddenBrowser) {
         logger->debug(L"PopupWindow::OnSize hiddenBrowser not initialized");
         return -1;
     }
 
     RECT rect; 
     WORD width, height;
-    this->GetClientRect(&rect);
+    GetClientRect(&rect);
     width  = LOWORD(lparam);
     height = HIWORD(lparam);
     
@@ -254,47 +251,43 @@ LRESULT PopupWindow::OnKillFocus(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& h
  */
 LRESULT PopupWindow::OnSetFocus(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    HWND new_hwnd = reinterpret_cast<HWND>(wparam);
-
-	if (!new_hwnd) {
-		logger->debug(L"PopupWindow::OnSetFocus Ignoring event");
-		return S_OK;
-	}
-
-    logger->debug(L"PopupWindow::OnSetFocus"
-                  L" -> " + boost::lexical_cast<wstring>(new_hwnd));
-
-    // make sure popup gets "onfocus" event
-    HRESULT hr;
-    CComPtr<IDispatch> disp;
-    this->hiddenBrowser->get_Document(&disp);
-    if (!disp) {
-        logger->error(L"PopupWindow::OnSetFocus get_Document failed");
-        return E_FAIL;
+  HWND new_hwnd = reinterpret_cast<HWND>(wparam);
+  LRESULT lr = S_OK;
+  HRESULT hr = S_OK;
+  CComPtr<IDispatch> disp = nullptr;
+  CComPtr<IHTMLElement> body = nullptr;
+  for (;;) {
+    if (!new_hwnd) {
+      logger->debug(L"PopupWindow::OnSetFocus Ignoring event");
+      break;
     }
+
+    logger->debug(L"PopupWindow::OnSetFocus -> " + boost::lexical_cast<wstring>(new_hwnd));
+    
+    hiddenBrowser->get_Document(&disp);
+    BreakOnNull(disp, lr);
+
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    if (!htmlDocument2) {
-        logger->error(L"PopupWindow::OnSetFocus IHTMLDocument2 failed");
-        return E_FAIL;
-    }
-    CComPtr<IHTMLElement> body;
+    BreakOnNull(htmlDocument2, lr);
+
     hr = htmlDocument2->get_body(&body);
-    if (FAILED(hr) || !body) return S_OK; // don't send focus if we don't have a body
+    BreakOnFailed(hr);
+    BreakOnNull(body, hr);
+    //if (FAILED(hr) || !body) return S_OK; // don't send focus if we don't have a body
 
     CComQIPtr<IHTMLDocument4, &IID_IHTMLDocument4> htmlDocument4(htmlDocument2);
-    if (!htmlDocument4) {
-        logger->error(L"PopupWindow::OnSetFocus IHTMLDocument4 failed");
-        return E_FAIL;
-    }
+    BreakOnNull(htmlDocument4, lr);
     logger->debug(L"PopupWindow::OnSetFocus htmlDocument4->focus()");
 
     hr = htmlDocument4->focus();
-    if (FAILED(hr)) {
-        logger->error(L"PopupWindow::OnSetFocus failed to set focus"
-                      L" -> " + logger->parse(hr));
-    }
+    if (FAILED(hr)) 
+      logger->error(L"PopupWindow::OnSetFocus failed to set focus -> " + logger->parse(hr));
+    
+    lr = DefWindowProc(msg, wparam, lparam);
+    break;
+  }
 
-    return this->DefWindowProc(msg, wparam, lparam); 
+  return lr;
 }
 
 
