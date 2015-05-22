@@ -58,19 +58,16 @@ bool FrameServer::AddRef(bool startListener)
  */
 bool FrameServer::Release()
 {
-    logger->debug(L"FrameServer::Release"
-                  L" -> " + boost::lexical_cast<wstring>(FrameServer::refCount));
+  logger->debug(L"FrameServer::Release -> " + boost::lexical_cast<wstring>(FrameServer::refCount));
+  ATL::CComCritSecLock<CComAutoCriticalSection> llock(FrameServer::lock, true);
 
-    ATL::CComCritSecLock<CComAutoCriticalSection> llock(FrameServer::lock, true);
+  if (--FrameServer::refCount == 0) {
+    delete FrameServer::instance;
+    FrameServer::instance = nullptr;
+    return true;
+  }
 
-    // if (++FrameServer::refCount == 0) { // strange copy-paste? 
-    if (FrameServer::refCount == 0) {
-        delete FrameServer::instance;
-        FrameServer::instance = nullptr;
-        return true;
-    }
-
-    return false;
+  return false;
 }
 
 
@@ -129,14 +126,7 @@ void FrameServer::load(HWND toolbar, HWND target,
     Button  button;
     hr = button_addCommand(uuid.c_str(), title.c_str(), icon.c_str()).exec(toolbar, target, &button);
     if (FAILED(hr)) {
-        logger->error(L"FrameServer::load failed to create button"
-                      L" -> " + logger->parse(hr));
-        ::MessageBox(NULL,
-                     wstring(L"Forge could not create button. Please check that "
-                             L"your icon file is a 16x16 bitmap in .ico format: "
-                             L"'" + icon + L"'").c_str(),
-                     VENDOR_COMPANY_NAME,
-                     MB_TASKMODAL | MB_ICONEXCLAMATION);
+        logger->error(L"FrameServer::load failed to create button -> " + logger->parse(hr));
         return;
     }
 
@@ -196,18 +186,11 @@ void FrameServer::unload(DWORDX processId, INT_PTRX proxy)
  */
 void FrameServer::SetCurrentProxy(DWORDX processId, INT_PTRX proxy, HWND toolbar)
 {
-    /*logger->debug(L"FrameServer::SetCurrentProxy"
-                  L" -> " + boost::lexical_cast<wstring>(processId) +
-                  L" -> " + boost::lexical_cast<wstring>(proxy));*/
-    //L" -> " + boost::lexical_cast<wstring>(m_clientLock));
-
-    ATL::CComCritSecLock<CComAutoCriticalSection> lock(m_clientLock, true);
-    
-    // store current proxy  
-    m_activeProcessId = processId;
-    m_activeProxy = proxy;
-	m_activeToolbar = toolbar;
-    //logger->debug(L"FrameServer::SetCurrentProxy fin");
+  ATL::CComCritSecLock<CComAutoCriticalSection> lock(m_clientLock, true);
+  // store current proxy  
+  m_activeProcessId = processId;
+  m_activeProxy = proxy;
+  m_activeToolbar = toolbar;
 }
 
 
@@ -216,12 +199,6 @@ void FrameServer::SetCurrentProxy(DWORDX processId, INT_PTRX proxy, HWND toolbar
  */
 bool FrameServer::WndProcTarget(LRESULT* lresult, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    /*logger->debug(L"FrameServer::WndProcTarget"
-                  L" -> " + boost::lexical_cast<wstring>(lresult) +
-                  L" -> " + boost::lexical_cast<wstring>(msg) +
-                  L" -> " + boost::lexical_cast<wstring>(wparam) +
-                  L" -> " + boost::lexical_cast<wstring>(lparam));*/
-
     if (msg == WM_COMMAND) {
         // should we use IPC or access client proxy directly 
         if (m_activeProcessId != ::GetCurrentProcessId()) {
@@ -247,13 +224,7 @@ bool FrameServer::WndProcTarget(LRESULT* lresult, UINT msg, WPARAM wparam, LPARA
  */
 bool FrameServer::WndProcToolbar(LRESULT* lresult, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    /*logger->debug(L"FrameServer::WndProcToolbar"
-                  L" -> " + boost::lexical_cast<wstring>(lresult) +
-                  L" -> " + boost::lexical_cast<wstring>(msg) +
-                  L" -> " + boost::lexical_cast<wstring>(wparam) +
-                  L" -> " + boost::lexical_cast<wstring>(lparam));*/
-
-    return false;
+  return false;
 }
 
 
@@ -392,23 +363,15 @@ DWORD FrameServer::ProxyListen(LPVOID param)
  */
 LRESULT FrameServer::WndProcTargetS(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    /*logger->debug(L"FrameServer::WndProcTargetS"
-                  L" -> " + boost::lexical_cast<wstring>(hwnd) +
-                  L" -> " + boost::lexical_cast<wstring>(msg) +
-                  L" -> " + boost::lexical_cast<wstring>(wparam) +
-                  L" -> " + boost::lexical_cast<wstring>(lparam));*/
+  // capture button clicks
+  if (msg == WM_COMMAND)
+    FrameServer::instance->OnButtonClick(hwnd, wparam, lparam);
 
-    // capture button clicks
-    if (msg == WM_COMMAND) { 
-        FrameServer::instance->OnButtonClick(hwnd, wparam, lparam);
-    } 
-    
-    LRESULT result = 0;
-    if (FrameServer::instance->WndProcTarget(&result, msg, wparam, lparam)) {
-        return result;
-    }
-    
-    return CallWindowProc(FrameServer::instance->m_oldWndProcTarget, hwnd, msg, wparam, lparam);
+  LRESULT result = 0;
+  if (FrameServer::instance->WndProcTarget(&result, msg, wparam, lparam))
+    return result;
+
+  return CallWindowProc(FrameServer::instance->m_oldWndProcTarget, hwnd, msg, wparam, lparam);
 }
 
 
