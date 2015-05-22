@@ -40,28 +40,29 @@ HWND WindowsMessage::GetToolbar(HWND ieframe, HWND *out_toolbar, HWND *out_targe
     class_list = wstringvector(ie7_cmd_bar, staticarray_end(ie7_cmd_bar));
   }
 
-  logger->debug(L"WindowsMessage::GetToolbar class list"
-    L" -> " + boost::algorithm::join(class_list, L", "));
+  logger->debug(L"WindowsMessage::GetToolbar class list -> " + boost::algorithm::join(class_list, L", "));
 
   HWND window = ieframe;
   HWND parent = ieframe;
-  wstringvector::const_iterator window_class = class_list.begin();
-  for (; window_class != class_list.end(); window_class++) {
+  for (auto& window_class : class_list ) {
     parent = window;
-    if (ie_major >= 9 && (*window_class).c_str() == L"ToolbarWindow32") {
-      window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), L"Favorites and Tools Bar");
+    LPCWSTR wc_str = window_class.c_str();
+    if (ie_major >= 9 && window_class == L"ToolbarWindow32") {
+      window = ::FindWindowEx(parent, NULL, wc_str, L"Favorites and Tools Bar");
     }
     else {
-      window = ::FindWindowEx(parent, NULL, (*window_class).c_str(), NULL);
+      window = ::FindWindowEx(parent, NULL, wc_str, NULL);
     }
     if (!window) {
-      logger->error(L"WindowsMessage::GetToolbar failed to get " + *window_class);
+      logger->error(L"WindowsMessage::GetToolbar failed to get " + window_class);
       return nullptr;
     }
   }
 
-  if (out_toolbar) *out_toolbar = window;
-  if (out_target)  *out_target = parent;
+  if (out_toolbar)
+    *out_toolbar = window;
+  if (out_target)
+    *out_target = parent;
 
   return window;
 }
