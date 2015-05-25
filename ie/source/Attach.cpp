@@ -4,45 +4,30 @@
 /**
  * Helper: Attach::NativeBackground
  */
-HRESULT Attach::NativeBackground(const wstring& uuid, 
-                                 const wstring& url, 
-                                 bool isVisible,
-                                 INativeBackground **nativeBackground,
-                                 unsigned int *instanceId)
+HRESULT Attach::NativeBackground(const wstring& uuid, const wstring& url, bool isVisible, INativeBackground **nativeBackground, unsigned int *instanceId)
 {
-    HRESULT hr;
-    
-    if (*nativeBackground == NULL) {
-        //logger->debug(L"Attach::NativeBackground creating instance");
-        hr = ::CoCreateInstance(CLSID_NativeBackground, 
-                                NULL,
-                                CLSCTX_LOCAL_SERVER,
-                                IID_INativeBackground,
-                                (LPVOID*)nativeBackground);
-        if (FAILED(hr)) {
-            logger->error(L"Attach::NativeBackground failed to create instance"
-                          L" -> " + logger->parse(hr));
-            return hr;
-        }
+  HRESULT hr = S_OK;
+  for (;;) {
+    BreakOnNull(nativeBackground, hr);
+    if (!*nativeBackground) {
+      hr = ::CoCreateInstance(CLSID_NativeBackground, NULL, CLSCTX_LOCAL_SERVER, IID_INativeBackground, (LPVOID*)nativeBackground);
+      if (FAILED(hr)) {
+        logger->error(L"Attach::NativeBackground failed to create instance -> " + logger->parse(hr));
+        break;
+      }
     }
-    
+
     // load background page
-    logger->debug(L"Attach::NativeBackground loading"
-                  L" -> " + url);
-    hr = (*nativeBackground)->load(CComBSTR(uuid.c_str()), 
-                                   CComBSTR(url.c_str()),
-                                   isVisible,
-                                   instanceId);
-    if (FAILED(hr)) {
-        logger->error(L"Attach::NativeBackground "
-                      L"failed to load background page"
-                      L" -> " + logger->parse(hr));
-        return hr;
-    }
+    logger->debug(L"Attach::NativeBackground loading -> " + url);
+    hr = (*nativeBackground)->load(CComBSTR(uuid.c_str()), CComBSTR(url.c_str()), isVisible, instanceId);
+    if (FAILED(hr))
+      logger->error(L"Attach::NativeBackground failed to load background page -> " + logger->parse(hr));
 
-    return S_OK;
+    break;
+  }
+
+  return hr;
 }
-
 
 /**
  * Helper: Attach::NativeExtensions
@@ -55,11 +40,9 @@ HRESULT Attach::NativeExtensions(const wstring& uuid, IDispatchEx *htmlWindow2Ex
   DISPPARAMS params;
 
   for (;;) {
-    if (!out)
-      break;
-    if (!htmlWindow2Ex)
-      break;
-
+    BreakOnNull(out, hr);
+    BreakOnNull(htmlWindow2Ex, hr);
+    
     if (*out == nullptr) {
       logger->debug(L"Attach::NativeExtension creating instance");
       hr = ::CoCreateInstance(CLSID_NativeExtensions, NULL, CLSCTX_LOCAL_SERVER, IID_INativeExtensions, (LPVOID*)out);
@@ -87,7 +70,7 @@ HRESULT Attach::NativeExtensions(const wstring& uuid, IDispatchEx *htmlWindow2Ex
     hr = htmlWindow2Ex->GetDispID(CComBSTR(name.c_str()), fdexNameEnsure, &dispid);
     if (FAILED(hr)) {
       logger->error(L"Attach::NativeExtensions GetDispID failed -> " + logger->parse(hr));
-      return hr;
+      break;
     }
 
     params.rgvarg = new VARIANT[1];
@@ -117,10 +100,8 @@ HRESULT Attach::NativeMessaging(const wstring& uuid, IDispatchEx *htmlWindow2Ex,
   DISPPARAMS params;
 
   for (;;) {
-    if (!out)
-      break;
-    if (!htmlWindow2Ex)
-      break;
+    BreakOnNull(out, hr);
+    BreakOnNull(htmlWindow2Ex, hr);
 
     if (*out == nullptr) {
       logger->debug(L"Attach::NativeMessaging creating instance");
@@ -176,10 +157,8 @@ HRESULT Attach::NativeTabs(IDispatchEx *htmlWindow2Ex, const wstring& name, Nati
   DISPID dispid;
 
   for (;;) {
-    if (!htmlWindow2Ex)
-      break;
-    if (!nativeTabs)
-      break;
+    BreakOnNull(htmlWindow2Ex, hr);
+    BreakOnNull(nativeTabs, hr);
 
     // initialize nativeTabs COM object
     hr = ::CreateDispTypeInfo(&NativeAccessible::Interface, LOCALE_SYSTEM_DEFAULT, &nativeTabsT);
@@ -235,10 +214,8 @@ HRESULT Attach::NativeControls(const wstring& uuid, IDispatchEx *htmlWindow2Ex, 
   DISPPARAMS params;
 
   for (;;) {
-    if (!out)
-      break;
-    if (!htmlWindow2Ex)
-      break;
+    BreakOnNull(out, hr);
+    BreakOnNull(htmlWindow2Ex, hr);
 
     if (*out == nullptr) {
       logger->debug(L"Attach::NativeControls creating instance");
