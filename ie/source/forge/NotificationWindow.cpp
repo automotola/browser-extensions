@@ -9,54 +9,47 @@
  */
 NotificationWindow* NotificationWindow::theNotification;
 
-
 /**
  * Lifecycle: Create
  */
-NotificationWindow::NotificationWindow()
-    : m_isInitialized(false)
+NotificationWindow::NotificationWindow() : m_isInitialized(false)
 {
 }
-
 
 /**
  * Lifecycle: Destroy
  */
 NotificationWindow::~NotificationWindow()
 {
-    this->DestroyWindow();
+  DestroyWindow();
 }
-
 
 /**
  * Method: Show
  *
  * @param message
  */
-void NotificationWindow::Show(const wstring& icon, const wstring& title, 
-                              const wstring& message)
+void NotificationWindow::Show(const wstring& icon, const wstring& title, const wstring& message)
 {
-    // make sure we hide any previous instance
-    if (m_isInitialized) { 
-        ShowWindow(SW_HIDE);  
-    }
+  // make sure we hide any previous instance
+  if (m_isInitialized)
+    ShowWindow(SW_HIDE);
 
-    bfs::wpath path = icon;
-    if (!bfs::exists(path)) {
-        logger->error(L"NotificationWindow::Show icon not found: " + 
-                      path.wstring()); 
-        m_icon = L"";
-    } else {
-        m_icon = icon;
-    }
+  bfs::wpath path = icon;
+  if (!bfs::exists(path)) {
+    logger->error(L"NotificationWindow::Show icon not found: " + path.wstring());
+    m_icon = L"";
+  }
+  else
+    m_icon = icon;
 
-    m_icon    = icon;
-    m_title   = title;
-    m_message = message;
-    
-    this->Show();
+
+  m_icon = icon;
+  m_title = title;
+  m_message = message;
+
+  Show();
 }
-
 
 /**
  * Method: Show
@@ -196,7 +189,6 @@ LRESULT NotificationWindow::OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
   return 0;
 }
 
-
 /**
  * Event: OnClose
  */
@@ -205,7 +197,6 @@ LRESULT NotificationWindow::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
   return 0;
 }
 
-
 /**
  * Event: OnDestroy
  */
@@ -213,7 +204,6 @@ LRESULT NotificationWindow::OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, B
 {
   return 0;
 }
-
 
 /**
  * Event: OnTimer

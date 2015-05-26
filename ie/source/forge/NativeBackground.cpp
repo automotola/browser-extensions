@@ -5,29 +5,26 @@
 /**
  * Construction
  */
-CNativeBackground::CNativeBackground()
-    : isVisible(FALSE)
+CNativeBackground::CNativeBackground() : isVisible(FALSE), instanceCounter(1) // 0 -> background
 {
-    this->instanceCounter = 1; // 0 -> background
 }
-
 
 /** 
  * Destruction
  */
 CNativeBackground::~CNativeBackground()
 {
-    logger->debug(L"CNativeBackground::~CNativeBackground");
+  logger->debug(L"CNativeBackground::~CNativeBackground");
 }
 
 HRESULT CNativeBackground::FinalConstruct()
 {
-    return S_OK;
+  return S_OK;
 }
 
 void CNativeBackground::FinalRelease()
 {
-    logger->debug(L"CNativeBackground::FinalRelease");
+  logger->debug(L"CNativeBackground::FinalRelease");
 }
 
 
@@ -36,17 +33,14 @@ void CNativeBackground::FinalRelease()
  */
 STDMETHODIMP CNativeBackground::InterfaceSupportsErrorInfo(REFIID riid)
 {
-    static const IID* const arr[] = {
-        &IID_INativeBackground
-    };
-    for (int i=0; i < sizeof(arr) / sizeof(arr[0]); i++) {
-        if (InlineIsEqualGUID(*arr[i],riid)) {
-            return S_OK;
-        }
-    }
-    return S_FALSE;
-}
+  static const IID* const arr[] = { &IID_INativeBackground };
+  
+  for (auto arri : arr)
+    if (InlineIsEqualGUID(*arri, riid))
+      return S_OK;
 
+  return S_FALSE;
+}
 
 /**
  * Method: NativeBackground::load
@@ -121,26 +115,21 @@ STDMETHODIMP CNativeBackground::load(BSTR uuid, BSTR url, BOOL is_visible, unsig
  */
 STDMETHODIMP CNativeBackground::unload(BSTR uuid, unsigned int instanceId)
 {
-    logger->debug(L"CNativeBackground::unload"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(instanceId));
+  logger->debug(L"CNativeBackground::unload -> " + wstring(uuid) + L" -> " + boost::lexical_cast<wstring>(instanceId));
 
-    m_clients[uuid].erase(instanceId);
-    if (m_clients[uuid].empty()) {
-        logger->debug(L"CNativeBackground::unload "
-                      L"shutting down console -> " + wstring(uuid));
-        m_crouchingWindows.erase(uuid);
-        m_clients.erase(uuid);
-    }
+  m_clients[uuid].erase(instanceId);
+  if (m_clients[uuid].empty()) {
+    logger->debug(L"CNativeBackground::unload shutting down console -> " + wstring(uuid));
+    m_crouchingWindows.erase(uuid);
+    m_clients.erase(uuid);
+  }
 
-    logger->debug(L"CNativeBackground::unload clients remaining: " +
-                  boost::lexical_cast<wstring>(m_clients.size()));
+  logger->debug(L"CNativeBackground::unload clients remaining: " + boost::lexical_cast<wstring>(m_clients.size()));
 
-    if (m_clients.empty()) {
-        return this->shutdown();
-    } 
-
-    return S_OK;
+  if (m_clients.empty())
+    return shutdown();
+  
+  return S_OK;
 }
 
 
@@ -149,10 +138,8 @@ STDMETHODIMP CNativeBackground::unload(BSTR uuid, unsigned int instanceId)
  */
 HRESULT CNativeBackground::shutdown()
 {
-    logger->debug(L"CNativeBackground::shutdown "
-                  L" -> " + boost::lexical_cast<wstring>(m_dwRef));
-    
-   return S_OK;
+  logger->debug(L"CNativeBackground::shutdown -> " + boost::lexical_cast<wstring>(m_dwRef));
+  return S_OK;
 }
 
 
@@ -164,11 +151,8 @@ HRESULT CNativeBackground::shutdown()
  */
 STDMETHODIMP CNativeBackground::visible(BSTR uuid, BOOL is_visible)
 {
-    logger->debug(L"CNativeBackground::visible"
-                  L" -> " + wstring(uuid) +
-                  L" -> " + boost::lexical_cast<wstring>(is_visible));
-
-    return S_OK;
+  logger->debug(L"CNativeBackground::visible -> " + wstring(uuid) + L" -> " + boost::lexical_cast<wstring>(is_visible));
+  return S_OK;
 }
 
 

@@ -2,23 +2,20 @@
 #include "PopupWindow.h"
 
 #include <gdiplus.h>
-using namespace Gdiplus;
-
 
 /**
  * Construction
  */
-PopupWindow::PopupWindow(const wstring& uuid, POINT point, const wstring& url) 
-    : hiddenBrowser(this, uuid, true, true), 
-      uuid(uuid), url(url)
+PopupWindow::PopupWindow(const wstring& uuid, POINT point, const wstring& url)
+  : hiddenBrowser(this, uuid, true, true), uuid(uuid), url(url)
 {
-    logger->debug(L"PopupWindow::PopupWindow -> " + uuid);
-    
-    // get screen metrics
-    DWORD screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
-    alignment = (point.x > (int)(screenWidth / 2))
-      ? PopupWindow::left
-      : PopupWindow::right;
+  logger->debug(L"PopupWindow::PopupWindow -> " + uuid);
+
+  // get screen metrics
+  DWORD screenWidth = ::GetSystemMetrics(SM_CXSCREEN);
+  alignment = (point.x > (int)(screenWidth / 2))
+    ? PopupWindow::left
+    : PopupWindow::right;
 }
 
 
@@ -77,8 +74,8 @@ PopupWindow::~PopupWindow()
  */
 LRESULT PopupWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    logger->debug(L"PopupWindow::OnDestroy");
-    return 0;
+  logger->debug(L"PopupWindow::OnDestroy");
+  return 0;
 }
 
 
@@ -87,35 +84,31 @@ LRESULT PopupWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& han
  */
 LRESULT PopupWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    if (!hiddenBrowser) {
-        logger->debug(L"PopupWindow::OnSize hiddenBrowser not initialized");
-        return -1;
-    }
+  if (!hiddenBrowser) {
+    logger->debug(L"PopupWindow::OnSize hiddenBrowser not initialized");
+    return -1;
+  }
 
-    RECT rect; 
-    WORD width, height;
-    GetClientRect(&rect);
-    width  = LOWORD(lparam);
-    height = HIWORD(lparam);
-    
-    logger->debug(L"PopupWindow::OnSize"
-                  L" -> " + boost::lexical_cast<wstring>(rect.left) +
-                  L" -> " + boost::lexical_cast<wstring>(rect.top) +
-                  L" -> " + boost::lexical_cast<wstring>(rect.right) +
-                  L" -> " + boost::lexical_cast<wstring>(rect.bottom) +
-                  L" -> " + boost::lexical_cast<wstring>(width) +
-                  L" -> " + boost::lexical_cast<wstring>(height));
+  RECT rect;
+  WORD width, height;
+  GetClientRect(&rect);
+  width = LOWORD(lparam);
+  height = HIWORD(lparam);
 
-    int inset = 1;
-    this->hiddenBrowser.MoveWindow(rect.left + inset, 
-                                   rect.top + TAB_SIZE + inset,
-                                   width - (inset * 2), 
-                                   height - TAB_SIZE - (inset * 2));
-    //handled = TRUE;
+  logger->debug(L"PopupWindow::OnSize"
+    L" -> " + boost::lexical_cast<wstring>(rect.left) +
+    L" -> " + boost::lexical_cast<wstring>(rect.top) +
+    L" -> " + boost::lexical_cast<wstring>(rect.right) +
+    L" -> " + boost::lexical_cast<wstring>(rect.bottom) +
+    L" -> " + boost::lexical_cast<wstring>(width)+
+    L" -> " + boost::lexical_cast<wstring>(height));
 
-    return 0;
+  int inset = 1;
+  hiddenBrowser.MoveWindow(rect.left + inset, rect.top + TAB_SIZE + inset, width - (inset * 2), height - TAB_SIZE - (inset * 2));
+  //handled = TRUE;
+
+  return 0;
 }
-
 
 /**
  * Event: OnPaint
@@ -124,127 +117,110 @@ LRESULT PopupWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handle
  */
 LRESULT PopupWindow::OnPaint(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    PAINTSTRUCT ps;
-    this->BeginPaint(&ps);  
+  PAINTSTRUCT ps = {0};
+  BeginPaint(&ps);
 
-    // init gdi+
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+  // init gdi+
+  ULONG_PTR gdiplusToken;
+  Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+  Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-    // get draw area
-    RECT client;
-    ::GetClientRect(m_hWnd, &client);
-    Rect rect(client.left, 
-              client.top, 
-              client.right - client.left, 
-              client.bottom - client.top);
-    
-    // create Gdiplus Graphics object
-    Graphics* graphics = new Graphics(this->m_hWnd, FALSE);
-    graphics->SetClip(rect);
+  // get draw area
+  RECT client;
+  ::GetClientRect(m_hWnd, &client);
+  Gdiplus::Rect rect(client.left, client.top, client.right - client.left, client.bottom - client.top);
 
-    // pens & brushes
-    Pen* pen = new Pen(Color(255, 0, 0, 0), 1.0f);
-    SolidBrush* brush = 
-        new SolidBrush(hiddenBrowser.bgcolor);
-    SolidBrush* chromakey = 
-        new SolidBrush(Color(255, 77, 77, 77));
+  // create Gdiplus Graphics object
+  Gdiplus::Graphics graphics(m_hWnd, FALSE);
+  graphics.SetClip(rect);
 
-    // draw chromakey background
-    graphics->FillRectangle(chromakey, 
-                            rect.X, rect.Y, rect.Width, rect.Height);
+  // pens & brushes
+  Gdiplus::Pen pen(Gdiplus::Color(255, 0, 0, 0), 1.0f);
+  Gdiplus::SolidBrush brush(hiddenBrowser.bgcolor);
+  Gdiplus::SolidBrush chromakey(Gdiplus::Color(255, 77, 77, 77));
 
-    // draw background
-    graphics->FillRectangle(brush, 
-                            rect.X, rect.Y + TAB_SIZE, rect.Width, rect.Height);
+  // draw chromakey background
+  graphics.FillRectangle(&chromakey, rect.X, rect.Y, rect.Width, rect.Height);
 
-    // draw border
-    if (this->alignment == left) {
-        Point border[] = {
-            Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE),
-            Point(rect.X, rect.Y + TAB_SIZE),
-            Point(rect.X, rect.Height - 1),
-            Point(rect.Width - 1, rect.Height - 1),
-            Point(rect.Width - 1, rect.Y + TAB_SIZE),
-            Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE)
-        };
-        graphics->DrawLines(pen, border, 6);
-    } else {
-        Point border[] = {
-            Point(rect.X + (TAB_SIZE * 1), rect.Y + TAB_SIZE),
-            Point(rect.X, rect.Y + TAB_SIZE),
-            Point(rect.X, rect.Height - 1),
-            Point(rect.Width - 1, rect.Height - 1),
-            Point(rect.Width - 1, rect.Y + TAB_SIZE),
-            Point(rect.X + (TAB_SIZE * 3), rect.Y + TAB_SIZE)
-        };
-        graphics->DrawLines(pen, border, 6);
-    }
+  // draw background
+  graphics.FillRectangle(&brush, rect.X, rect.Y + TAB_SIZE, rect.Width, rect.Height);
 
-    // draw tab
-    if (this->alignment == left) {
-        Point tab[] = {
-            Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
-            Point(rect.Width - (TAB_SIZE * 2), rect.Y),
-            Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
-        };
-        graphics->FillPolygon(brush, tab, 3);
-        Point tab_border[] = {
-            Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE),
-            Point(rect.Width - (TAB_SIZE * 2), rect.Y),
-            Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE)
-        };
-        graphics->DrawLines(pen, tab_border, 3);
-    } else {
-        Point tab[] = {
-            Point((TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
-            Point((TAB_SIZE * 2), rect.Y),
-            Point((TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
-        };
-        graphics->FillPolygon(brush, tab, 3);
-        Point tab_border[] = {
-            Point((TAB_SIZE * 1), rect.Y + TAB_SIZE),
-            Point((TAB_SIZE * 2), rect.Y),
-            Point((TAB_SIZE * 3), rect.Y + TAB_SIZE)
-        };
-        graphics->DrawLines(pen, tab_border, 3);
-    }
+  // draw border
+  if (alignment == left) {
+    Gdiplus::Point border[] = {
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.X, rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.X, rect.Height - 1),
+      Gdiplus::Point(rect.Width - 1, rect.Height - 1),
+      Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE)
+    };
+    graphics.DrawLines(&pen, border, 6);
+  }
+  else {
+    Gdiplus::Point border[] = {
+      Gdiplus::Point(rect.X + (TAB_SIZE * 1), rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.X, rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.X, rect.Height - 1),
+      Gdiplus::Point(rect.Width - 1, rect.Height - 1),
+      Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.X + (TAB_SIZE * 3), rect.Y + TAB_SIZE)
+    };
+    graphics.DrawLines(&pen, border, 6);
+  }
 
-    // clean up, need to explicitly delete stuff as we are shutting down gdi+ within the scope of the function
-    // and thus cannot rely on stuff going out of scope first
-    delete chromakey;
-    delete brush;
-    delete pen;
-    delete graphics;
+  // draw tab
+  if (alignment == left) {
+    Gdiplus::Point tab[] = {
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y),
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
+    };
+    graphics.FillPolygon(&brush, tab, 3);
+    Gdiplus::Point tab_border[] = {
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE),
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y),
+      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE)
+    };
+    graphics.DrawLines(&pen, tab_border, 3);
+  } else {
+    Gdiplus::Point tab[] = {
+      Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
+      Gdiplus::Point((TAB_SIZE * 2), rect.Y),
+      Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
+    };
+    graphics.FillPolygon(&brush, tab, 3);
+    Gdiplus::Point tab_border[] = {
+      Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE),
+      Gdiplus::Point((TAB_SIZE * 2), rect.Y),
+      Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE)
+    };
+    graphics.DrawLines(&pen, tab_border, 3);
+  }
 
-    // shutdown gdi+
-    Gdiplus::GdiplusShutdown(gdiplusToken);
+  // shutdown gdi+
+  Gdiplus::GdiplusShutdown(gdiplusToken);
 
-    this->EndPaint(&ps);
-    handled = TRUE;
+  EndPaint(&ps);
+  handled = TRUE;
 
-    return 0;
+  return 0;
 }
-
 
 /**
  * Event: OnKillFocus
  */
 LRESULT PopupWindow::OnKillFocus(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    HWND new_hwnd = reinterpret_cast<HWND>(wparam);
+  HWND new_hwnd = reinterpret_cast<HWND>(wparam);
 
-    logger->debug(L"PopupWindow::OnKillFocus"
-                  L" -> " + boost::lexical_cast<wstring>(new_hwnd));
+  logger->debug(L"PopupWindow::OnKillFocus -> " + boost::lexical_cast<wstring>(new_hwnd));
 
-    if (!::IsChild(this->m_hWnd, new_hwnd)) {
-        this->ShowWindow(SW_HIDE);
-    }
-
-    return this->DefWindowProc(msg, wparam, lparam); 
+  if (!::IsChild(m_hWnd, new_hwnd))
+    ShowWindow(SW_HIDE);
+  
+  return DefWindowProc(msg, wparam, lparam);
 }
-
 
 /**
  * Event: OnSetFocus

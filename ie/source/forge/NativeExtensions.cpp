@@ -36,7 +36,6 @@ void CNativeExtensions::FinalRelease()
   logger->debug(L"CNativeExtensions::FinalRelease");
 }
 
-
 /**
  * InterfaceSupportsErrorInfo
  */
@@ -49,7 +48,6 @@ STDMETHODIMP CNativeExtensions::InterfaceSupportsErrorInfo(REFIID riid)
 
   return S_FALSE;
 }
-
 
 /**
  * Method: NativeExtensions::log
@@ -64,7 +62,6 @@ STDMETHODIMP CNativeExtensions::log(BSTR uuid, BSTR message)
     } 
     return S_OK;
 }
-
 
 /**
  * Method: NativeExtensions::prefs_get
@@ -378,25 +375,26 @@ STDMETHODIMP CNativeExtensions::cookies_get(BSTR url, BSTR name, IDispatch *succ
 
 STDMETHODIMP CNativeExtensions::cookies_remove(BSTR url, BSTR name, BOOL *out_success)
 {
-    wstring w_url = wstring(url);
-    wstring w_name = wstring(name);
+  wstring w_url = wstring(url);
+  wstring w_name = wstring(name);
 
-    HRESULT hr = S_OK;
+  HRESULT hr = S_OK;
 
-    for (;;) {
-      logger->debug(L"NativeExtensions::cookies_remove -> " + w_url + L" -> " + w_name);
-      BreakOnNull(out_success, hr);
+  for (;;) {
+    logger->debug(L"NativeExtensions::cookies_remove -> " + w_url + L" -> " + w_name);
+    BreakOnNull(out_success, hr);
 
-      if (tabId == 0) {
-        wstring newCookieData = w_name + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
-        *out_success = InternetSetCookie(w_url.c_str(), NULL, newCookieData.c_str()) ? TRUE : FALSE;
-      } else {
-        logger->error(L"NativeExtensions::cookies_remove failed: tabId != 0 -> " + w_url + L" -> " + w_name);
-        *out_success = FALSE;
-      }
-
-      break;
+    if (tabId == 0) {
+      wstring newCookieData = w_name + L"=; expires = Sat,01-Jan-2000 00:00:00 GMT";
+      *out_success = InternetSetCookie(w_url.c_str(), NULL, newCookieData.c_str()) ? TRUE : FALSE;
+    }
+    else {
+      logger->error(L"NativeExtensions::cookies_remove failed: tabId != 0 -> " + w_url + L" -> " + w_name);
+      *out_success = FALSE;
     }
 
-    return hr;
+    break;
+  }
+
+  return hr;
 }

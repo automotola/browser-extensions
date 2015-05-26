@@ -12,8 +12,7 @@ BrowserWindow::BrowserWindow(const wstring& uuid, const wstring& url)
     : hiddenBrowser(this, uuid),
       uuid(uuid), url(url)
 {
-    logger->debug(L"BrowserWindow::BrowserWindow"
-                  L" -> " + uuid);
+    logger->debug(L"BrowserWindow::BrowserWindow -> " + uuid);
 }
 
 
@@ -22,10 +21,9 @@ BrowserWindow::BrowserWindow(const wstring& uuid, const wstring& url)
  */
 LRESULT BrowserWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-  HRESULT hr = 0;
+  HRESULT hr = S_OK;
   HWND hwnd;
   CRect dimensions;
-
 
   for (;;) {
     if (!m_hWnd) {
@@ -80,8 +78,8 @@ BrowserWindow::~BrowserWindow()
  */
 LRESULT BrowserWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    logger->debug(L"BrowserWindow::OnDestroy");
-    return 0;
+  logger->debug(L"BrowserWindow::OnDestroy");
+  return 0;
 }
 
 /**
@@ -89,18 +87,18 @@ LRESULT BrowserWindow::OnDestroy(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& h
  */
 LRESULT BrowserWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-    if (!hiddenBrowser) {
-        logger->debug(L"BrowserWindow::OnSize hiddenBrowser not initialized");
-        return -1;
-    }
+  if (!hiddenBrowser) {
+    logger->debug(L"BrowserWindow::OnSize hiddenBrowser not initialized");
+    return -1;
+  }
 
-    RECT rect; 
-    WORD width, height;
-    this->GetClientRect(&rect);
-    width  = LOWORD(lparam);
-    height = HIWORD(lparam);
-    hiddenBrowser.MoveWindow(rect.left, rect.top, rect.right, rect.bottom);
-    handled = TRUE;
+  RECT rect;
+  WORD width, height;
+  GetClientRect(&rect);
+  width = LOWORD(lparam);
+  height = HIWORD(lparam);
+  hiddenBrowser.MoveWindow(rect.left, rect.top, rect.right, rect.bottom);
+  handled = TRUE;
 
-    return 0;
+  return 0;
 }

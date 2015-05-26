@@ -39,8 +39,6 @@ Tab::Tab(int id, int index, int windowId,
 {
 }
 
-
-
 /**
  * Type: Callback
  */
@@ -49,46 +47,32 @@ Callback::Callback(const wstring& type, IDispatch *callback, IDispatch *error)
 {
 }
 
-
 Callback::Callback(UINT tabId, const wstring& type, IDispatch *callback, IDispatch *error) 
     : tabId(tabId), type(type), callback(callback), error(error) 
 {
 }
-
 
 Callback::~Callback() 
 {
     logger->debug(L"Callback::~Callback");
 }
 
-
 HRESULT Callback::Dispatch(const wstring& content, IDispatch *reply) 
 {
-    /*logger->debug(L"Callback::Dispatch"
-                  L" -> " + this->toString() +
-                  L" -> " + content);*/
-    HRESULT hr;
-    CComQIPtr<IDispatchEx> callbackex(this->callback);
-    hr = CComDispatchDriver(callbackex).Invoke2((DISPID)0,
-                                                &CComVariant(content.c_str()),
-                                                &CComVariant(reply));
-    if (SUCCEEDED(hr)) {
-        return S_OK;
-    }
-    
-    wstring e = L"Callback::Dispatch failed"
-        L" -> " + logger->parse(hr) +
-        L" -> " + content;
-    logger->error(e);
-    
-    CComQIPtr<IDispatchEx> errorex(this->error);
-    hr = CComDispatchDriver(errorex).Invoke1((DISPID)0,
-                                             &CComVariant(e.c_str()));
-    if (FAILED(hr)) {
-        logger->error(L"Callback::Dispatch failed to dispatch error"
-                      L" -> " + logger->parse(hr) +
-                      L" -> " + e);
-    }
+  HRESULT hr = S_OK;
+  CComQIPtr<IDispatchEx> callbackex(this->callback);
+  hr = CComDispatchDriver(callbackex).Invoke2((DISPID)0, &CComVariant(content.c_str()), &CComVariant(reply));
+  
+  if (SUCCEEDED(hr))
     return hr;
-}
 
+  wstring e = L"Callback::Dispatch failed -> " + logger->parse(hr) + L" -> " + content;
+  logger->error(e);
+
+  CComQIPtr<IDispatchEx> errorex(this->error);
+  hr = CComDispatchDriver(errorex).Invoke1((DISPID)0, &CComVariant(e.c_str()));
+  if (FAILED(hr))
+    logger->error(L"Callback::Dispatch failed to dispatch error -> " + logger->parse(hr) + L" -> " + e);
+
+  return hr;
+}
