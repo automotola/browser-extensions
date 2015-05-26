@@ -233,7 +233,7 @@ HRESULT button_onClickCommand::exec()
     L" -> " + boost::lexical_cast<wstring>(point.y));
 
   HRESULT hr = S_OK;  
-  CComPtr<INativeControls> nativeControls;
+  CComPtr<INativeControls> nativeControls = nullptr;
 
   for (;;) {
     // invoke NativeControls
@@ -244,7 +244,6 @@ HRESULT button_onClickCommand::exec()
     hr = ::CoCreateInstance(CLSID_NativeControls, NULL, CLSCTX_LOCAL_SERVER, IID_INativeControls, (LPVOID*)&nativeControls);
     if (FAILED(hr) || !nativeControls) {
       logger->error(L"button_onClickCommand::exec failed to create NativeControls instance -> " + logger->parse(hr));
-      ::CoUninitialize();
       break;
     }
 
@@ -259,7 +258,6 @@ HRESULT button_onClickCommand::exec()
     hr = GET_MSIE_VERSION(&major, &minor);
     if (FAILED(hr)) {
       logger->error(L"button_onClickCommand::exec failed to get browser version");
-      ::CoUninitialize();
       break;
     }
 
@@ -269,7 +267,6 @@ HRESULT button_onClickCommand::exec()
       hr = nativeControls->popup_hwnd(CComBSTR(uuid), &visible, (ULONG*)&popup);
       if (FAILED(hr) || !popup) {
         logger->error(L"button_onClickCommand::exec failed to invoke NativeControls::popup_hwnd -> " + logger->parse(hr));
-        ::CoUninitialize();
         break;
       }
 
@@ -280,9 +277,9 @@ HRESULT button_onClickCommand::exec()
       }
     }
 
-    ::CoUninitialize();
     break;
   }
 
+  ::CoUninitialize();
   return hr;
 }

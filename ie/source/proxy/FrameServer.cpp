@@ -121,10 +121,9 @@ void FrameServer::load(HWND toolbar, HWND target,
 
     lock.Unlock();
     
-    // add button
-    HRESULT hr;
-    Button  button;
-    hr = button_addCommand(uuid.c_str(), title.c_str(), icon.c_str()).exec(toolbar, target, &button);
+    // add button 
+    Button  button = {};
+    HRESULT hr = button_addCommand(uuid.c_str(), title.c_str(), icon.c_str()).exec(toolbar, target, &button);
     if (FAILED(hr)) {
         logger->error(L"FrameServer::load failed to create button -> " + logger->parse(hr));
         return;
