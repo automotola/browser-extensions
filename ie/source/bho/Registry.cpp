@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Registry.h"
-
+#include <strsafe.h> /* for StringCchCopy */
 
 /**
  * open key
@@ -85,21 +85,18 @@ bool Registry::set()
 /** 
  * delete key
  */
-#include <strsafe.h> /* for StringCchCopy */
+
 bool Registry::del() 
 {
-    logger->debug(L"Registry::del"
-                  L" -> " + boost::lexical_cast<wstring>(this->root) +
-                  L" -> " + this->subkey);    
+  logger->debug(L"Registry::del -> " + boost::lexical_cast<wstring>(this->root) + L" -> " + subkey);
 
-    if (!this->open()) {
-        return false;
-    }
+  if (!open())
+    return false;
 
-    TCHAR buf[MAX_PATH * 2];
-    StringCchCopy(buf, MAX_PATH * 2, subkey.c_str());
+  TCHAR buf[MAX_PATH * 2] = { 0 };
+  StringCchCopy(buf, MAX_PATH * 2, subkey.c_str());
 
-    return this->rdel(this->root, buf) != FALSE;
+  return rdel(root, buf) != FALSE;
 }
 
 
@@ -111,21 +108,19 @@ bool Registry::rdel(HKEY hKeyRoot, LPTSTR lpSubKey)
   LPTSTR lpEnd = nullptr;
   LONG result;
   DWORD size;
-  TCHAR szName[MAX_PATH] = { 0 };
+  TCHAR szName[MAX_PATH * 2] = { 0 };
   HKEY hKey;
   FILETIME ftWrite;
 
   // First, see if we can delete the key without having to recurse.
   result = ::RegDeleteKey(hKeyRoot, lpSubKey);
-  if (result == ERROR_SUCCESS) {
+  if (result == ERROR_SUCCESS)
     return true;
-  }
-
+  
   result = ::RegOpenKeyEx(hKeyRoot, lpSubKey, 0, KEY_READ, &hKey);
   if (result == ERROR_FILE_NOT_FOUND) {
     return true;
-  }
-  else if (result != ERROR_SUCCESS) {
+  } else if (result != ERROR_SUCCESS) {
     logger->debug(L"Registry::rdel error opening key");
     return false;
   }
@@ -140,8 +135,7 @@ bool Registry::rdel(HKEY hKeyRoot, LPTSTR lpSubKey)
 
   // Enumerate the keys
   size = MAX_PATH;
-  result = ::RegEnumKeyEx(hKey, 0, szName, &size, NULL,
-    NULL, NULL, &ftWrite);
+  result = ::RegEnumKeyEx(hKey, 0, szName, &size, NULL, NULL, NULL, &ftWrite);
   if (result == ERROR_SUCCESS) {
     do {
       StringCchCopy(lpEnd, MAX_PATH * 2, szName);
@@ -160,5 +154,5 @@ bool Registry::rdel(HKEY hKeyRoot, LPTSTR lpSubKey)
   // Try again to delete the key.
   result = ::RegDeleteKey(hKeyRoot, lpSubKey);
 
-  return (result == ERROR_SUCCESS);
+  return result == ERROR_SUCCESS;
 }

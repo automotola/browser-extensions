@@ -1,5 +1,4 @@
-#ifndef __UPDATEMANAGER_H__
-#define __UPDATEMANAGER_H__
+#pragma once
 
 #include <util.h>
 #include <json_spirit/json_spirit.h>
@@ -7,25 +6,20 @@
 /**
  * UpdateManager
  */
-class UpdateManager 
+class UpdateManager
 {
- public:
-    UpdateManager() {}
+public:
+  UpdateManager() {}
 
-    UpdateManager(const wstring& url) 
-        : m_url(url) {
-    }
+  UpdateManager(const wstring& url) : m_url(url)
+  {
+  }
 
-    void Check(const wstring& version);
-    void OnUpdateInfo(wstring data);
+  void Check(const wstring& version);
+  void OnUpdateInfo(wstring data);
 
-    typedef shared_ptr<UpdateManager> pointer;
+  typedef shared_ptr<UpdateManager> pointer;
 
- private:
-    wstring m_url;
+private:
+  wstring m_url;
 };
-
-
-
-
-#endif /* __UPDATEMANAGER_H__ */

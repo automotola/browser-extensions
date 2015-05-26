@@ -21,119 +21,122 @@ typedef IDispEventSimpleImpl<0, CBrowserHelperObject, &DIID_DWebBrowserEvents2> 
 /**
  * Internet Explorer Browser Helper Object 
  */
-class ATL_NO_VTABLE CBrowserHelperObject 
-    : public CComObjectRootEx<CComSingleThreadModel>,
-      public CComCoClass<CBrowserHelperObject, &CLSID_BrowserHelperObject>,
-      public IObjectWithSiteImpl<CBrowserHelperObject>,
-      public WebBrowserEvents2,
-      public IDispatchImpl<IBrowserHelperObject, &IID_IBrowserHelperObject, &LIBID_ForgeBHOLib, 1, 0> // (frameProxy)
+class ATL_NO_VTABLE CBrowserHelperObject
+  : public CComObjectRootEx<CComSingleThreadModel>,
+  public CComCoClass<CBrowserHelperObject, &CLSID_BrowserHelperObject>,
+  public IObjectWithSiteImpl<CBrowserHelperObject>,
+  public WebBrowserEvents2,
+  public IDispatchImpl < IBrowserHelperObject, &IID_IBrowserHelperObject, &LIBID_ForgeBHOLib, 1, 0 > // (frameProxy)
 {
- public:
-    CBrowserHelperObject();
-    
-DECLARE_GET_CONTROLLING_UNKNOWN()
-DECLARE_REGISTRY_RESOURCEID(IDR_BROWSERHELPEROBJECT)
-DECLARE_NOT_AGGREGATABLE(CBrowserHelperObject)
-DECLARE_PROTECT_FINAL_CONSTRUCT()
+public:
+  CBrowserHelperObject();
 
-BEGIN_COM_MAP(CBrowserHelperObject)
+  DECLARE_GET_CONTROLLING_UNKNOWN()
+  DECLARE_REGISTRY_RESOURCEID(IDR_BROWSERHELPEROBJECT)
+  DECLARE_NOT_AGGREGATABLE(CBrowserHelperObject)
+  DECLARE_PROTECT_FINAL_CONSTRUCT()
+
+  BEGIN_COM_MAP(CBrowserHelperObject)
     COM_INTERFACE_ENTRY(IObjectWithSite)
-END_COM_MAP()
+  END_COM_MAP()
 
-BEGIN_SINK_MAP(CBrowserHelperObject)
-    SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_NAVIGATECOMPLETE2,  OnNavigateComplete2, &OnNavigateComplete2Info)
-    SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_DOCUMENTCOMPLETE,   OnDocumentComplete, &OnDocumentCompleteInfo)
+  BEGIN_SINK_MAP(CBrowserHelperObject)
+    SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_NAVIGATECOMPLETE2, OnNavigateComplete2, &OnNavigateComplete2Info)
+    SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_DOCUMENTCOMPLETE, OnDocumentComplete, &OnDocumentCompleteInfo)
     SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_WINDOWSTATECHANGED, OnWindowStateChanged, &OnWindowStateChangedInfo)
     SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_BEFORENAVIGATE2, OnBeforeNavigate2, &OnBeforeNavigate2Info)
     SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_DOWNLOADBEGIN, OnDownloadBegin, &OnDownloadBeginInfo)
     SINK_ENTRY_INFO(0, DIID_DWebBrowserEvents2, DISPID_DOWNLOADCOMPLETE, OnDownloadComplete, &OnDownloadCompleteInfo)
 
-END_SINK_MAP()
+  END_SINK_MAP()
 
-    static _ATL_FUNC_INFO OnNavigateComplete2Info;
-    static _ATL_FUNC_INFO OnDocumentCompleteInfo;
-    static _ATL_FUNC_INFO OnWindowStateChangedInfo;
+  static _ATL_FUNC_INFO OnNavigateComplete2Info;
+  static _ATL_FUNC_INFO OnDocumentCompleteInfo;
+  static _ATL_FUNC_INFO OnWindowStateChangedInfo;
 
-    static _ATL_FUNC_INFO OnBeforeNavigate2Info;
-    static _ATL_FUNC_INFO OnDownloadBeginInfo;
-    static _ATL_FUNC_INFO OnDownloadCompleteInfo;
+  static _ATL_FUNC_INFO OnBeforeNavigate2Info;
+  static _ATL_FUNC_INFO OnDownloadBeginInfo;
+  static _ATL_FUNC_INFO OnDownloadCompleteInfo;
 
- public:
-    // IObjectWithSite
-    STDMETHOD(SetSite)(IUnknown *iunknown);
+public:
+  // IObjectWithSite
+  STDMETHOD(SetSite)(IUnknown *iunknown);
 
-    // IDispatchImpl 
-    STDMETHOD(Invoke)(DISPID dispid, REFIID riid, LCID lcid, WORD flags, 
-                      DISPPARAMS *params, VARIANT *result, EXCEPINFO *excepinfo, UINT *arg);
+  // IDispatchImpl 
+  STDMETHOD(Invoke)(DISPID dispid, REFIID riid, LCID lcid, WORD flags,
+    DISPPARAMS *params, VARIANT *result, EXCEPINFO *excepinfo, UINT *arg);
 
-    // DWebBrowserEvents2
-    void __stdcall OnNavigateComplete2(IDispatch *idispatch,
-                                       VARIANT *url);
-    void __stdcall OnDocumentComplete(IDispatch *idispatch, 
-                                      VARIANT *url);
-    void __stdcall OnWindowStateChanged(DWORD flags, DWORD mask);
+  // DWebBrowserEvents2
+  void __stdcall OnNavigateComplete2(IDispatch *idispatch,
+    VARIANT *url);
+  void __stdcall OnDocumentComplete(IDispatch *idispatch,
+    VARIANT *url);
+  void __stdcall OnWindowStateChanged(DWORD flags, DWORD mask);
 
-	void __stdcall OnAttachForgeExtensions(IDispatch *idispatch, 
-										   const wstring& location,
-										   const wstring& eventsource);
+  void __stdcall OnAttachForgeExtensions(IDispatch *idispatch,
+    const wstring& location,
+    const wstring& eventsource);
 
-    void __stdcall OnBeforeNavigate2(IDispatch *idispatch, VARIANT *url, VARIANT *Flags, 
-                                     VARIANT *TargetFrameName, VARIANT *PostData, 
-                                     VARIANT *Headers, VARIANT_BOOL* Cancel);
+  void __stdcall OnBeforeNavigate2(IDispatch *idispatch, VARIANT *url, VARIANT *Flags,
+    VARIANT *TargetFrameName, VARIANT *PostData,
+    VARIANT *Headers, VARIANT_BOOL* Cancel);
 
-    void __stdcall OnDownloadBegin();
-    void __stdcall OnDownloadComplete();
+  void __stdcall OnDownloadBegin();
+  void __stdcall OnDownloadComplete();
 
- private:
-    HRESULT OnConnect(IUnknown *iunknown);
-    HRESULT OnDisconnect(IUnknown *iunknown);
-    HRESULT OnFirstRunAfterInstall();
-    
-    // Keep COM servers around for duration of BHO life
-    NativeAccessible::pointer  m_nativeAccessible;
-    CComPtr<INativeBackground> m_nativeBackground;
-    CComPtr<INativeExtensions> m_nativeExtensions;
-    CComPtr<INativeMessaging>  m_nativeMessaging;
+private:
+  HRESULT OnConnect(IUnknown *iunknown);
+  HRESULT OnDisconnect(IUnknown *iunknown);
+  HRESULT OnFirstRunAfterInstall();
 
-    FrameProxy *m_frameProxy;
+  // Keep COM servers around for duration of BHO life
+  NativeAccessible::pointer  m_nativeAccessible;
+  CComPtr<INativeBackground> m_nativeBackground;
+  CComPtr<INativeExtensions> m_nativeExtensions;
+  CComPtr<INativeMessaging>  m_nativeMessaging;
 
-    ScriptExtensions::pointer m_scriptExtensions;
-    unsigned int m_instanceId;
-    bool m_isConnected;
-	bool m_isAttached;
+  FrameProxy *m_frameProxy;
 
-    int m_nPageCounter;
-    int m_nObjCounter;
-    bool m_bIsRefresh;
-    wstring m_strUrl;
+  ScriptExtensions::pointer m_scriptExtensions;
+  unsigned int m_instanceId;
+  bool m_isConnected;
+  bool m_isAttached;
 
-    void OnRefresh();
-    
-    // used to filter secondary requests
-    CComPtr<IWebBrowser2> m_webBrowser2;
+  int m_nPageCounter;
+  int m_nObjCounter;
+  bool m_bIsRefresh;
+  wstring m_strUrl;
 
-    // track window focus
-    struct {
-        int     id;
-        bool    active;
-        wstring url;
-        wstring title;
-    } m_tabInfo;
+  void OnRefresh();
 
-    std::pair<wstringvector, wstringvector> 
-        MatchManifest(IWebBrowser2 *webBrowser2,
-                      const Manifest::pointer& manifest, 
-                      const wstring& location);
- public:
-    HRESULT FinalConstruct() {
-        return S_OK;
-    }
-    void FinalRelease() { 
-        if (m_frameProxy) {
-            delete m_frameProxy;
-        }
-    }
+  // used to filter secondary requests
+  CComPtr<IWebBrowser2> m_webBrowser2;
+
+  // track window focus
+  struct
+  {
+    int     id;
+    bool    active;
+    wstring url;
+    wstring title;
+  } m_tabInfo;
+
+  std::pair<wstringvector, wstringvector>  MatchManifest(IWebBrowser2 *webBrowser2, const Manifest::pointer& manifest, const wstring& location);
+
+public:
+
+  HRESULT FinalConstruct() 
+  {
+    return S_OK;
+  }
+
+  void FinalRelease()
+  {
+    if (m_frameProxy)
+      delete m_frameProxy;
+  }
 };
+
 OBJECT_ENTRY_AUTO(__uuidof(BrowserHelperObject), CBrowserHelperObject)
 
 
