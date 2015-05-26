@@ -2,7 +2,8 @@
 
 #include <util.h>
 
-namespace WindowsMessage {
+namespace WindowsMessage 
+{
     // helpers
     HWND GetToolbar(HWND ieframe, HWND *toolbar = NULL, HWND *target = NULL);
     bool AddToolbarIcon(HWND toolbar, HICON icon, int *index);

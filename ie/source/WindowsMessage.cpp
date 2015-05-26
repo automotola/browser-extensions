@@ -167,18 +167,18 @@ bool WindowsMessage::tb_getbutton(HWND hwnd, int index,
  */
 bool WindowsMessage::tb_getbuttoninfo(HWND hwnd, int index, TBBUTTONINFO *out)
 {
-    if (!out || !out->pszText) {
-        logger->error(L"WindowsMessage::tb_getbuttoninfo invalid out argument");
-        return false;
-    }
+  if (!out || !out->pszText) {
+    logger->error(L"WindowsMessage::tb_getbuttoninfo invalid out argument");
+    return false;
+  }
 
-    size_t bytes = static_cast<int>(::SendMessage(hwnd, TB_GETBUTTONINFO, index, (LPARAM)out));
-    if (bytes == -1) {
-        logger->error(L"WindowsMessage::tb_getbuttoninfo failed to send message");
-        return false;
-    }
+  auto bytes = static_cast<int>(::SendMessage(hwnd, TB_GETBUTTONINFO, index, (LPARAM)out));
+  if (bytes == -1) {
+    logger->error(L"WindowsMessage::tb_getbuttoninfo failed to send message");
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 

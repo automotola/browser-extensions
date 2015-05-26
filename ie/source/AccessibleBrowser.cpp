@@ -242,7 +242,10 @@ HRESULT AccessibleBrowser::active(IWebBrowser2 **webBrowser2)
 
   HINSTANCE instance = nullptr;
   HWND ieframe = nullptr;
-  HWND hwnd = nullptr;  CComPtr<IHTMLDocument2> htmlDocument2 = nullptr; 
+  HWND hwnd = nullptr;
+
+  CComPtr<IHTMLDocument2> htmlDocument2 = nullptr;
+ 
   HRESULT hr = E_FAIL;
 
   for (;;) {

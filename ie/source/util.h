@@ -37,50 +37,52 @@ typedef boost::function<void (wstring data)> AsyncCallback;
 
 /** stl helper for static array initialization */
 template<typename T, size_t N> 
-T * staticarray_end(T (&ra)[N]) {
+T * staticarray_end(T (&ra)[N])
+{
     return ra + N;
 };
 
 
 /** string utilities */
-static wstring wstring_replace(const wstring& s, wchar_t from, wchar_t to) {
-    wstring ret = L"";
-    for (wstring::const_iterator i = s.begin(); i != s.end(); i++) {
-        if (*i == from) {
-            ret.append(1, to);
-        } else {
-            ret.append(1, *i);
-        }
-    }
-    return ret;
+static wstring wstring_replace(const wstring& s, wchar_t from, wchar_t to)
+{
+  wstring ret;
+  for (auto i = s.cbegin(); i != s.cend(); ++i) {
+    if (*i == from)
+      ret.append(1, to);
+    else
+      ret.append(1, *i);
+  }
+  return ret;
 };
 
-static wstring wstring_limit(const wstring& s, size_t maxlen = 160) {
-    size_t len = s.length();
-    if (len < maxlen) {
-        return s;
-    }
-    return s.substr(0, maxlen / 2) +  L" ... <schnip /> ... " + 
-        s.substr(len - maxlen / 2);
+static wstring wstring_limit(const wstring& s, size_t maxlen = 160) 
+{
+  size_t len = s.length();
+  if (len < maxlen)
+    return s;
+
+  return s.substr(0, maxlen / 2) + L" ... <schnip /> ... " + s.substr(len - maxlen / 2);
 }
 
-static bool wstring_match_wild(const wstring& wildcard, const wstring& s) {
-    wstring rex = wildcard;
-    boost::replace_all(rex, L"\\", L"\\\\");
-    boost::replace_all(rex, L"^", L"\\^");
-    boost::replace_all(rex, L".", L"\\.");
-    boost::replace_all(rex, L"$", L"\\$");
-    boost::replace_all(rex, L"|", L"\\|");
-    boost::replace_all(rex, L"(", L"\\(");
-    boost::replace_all(rex, L")", L"\\)");
-    boost::replace_all(rex, L"[", L"\\[");
-    boost::replace_all(rex, L"]", L"\\]");
-    boost::replace_all(rex, L"/", L"\\/");
-    boost::replace_all(rex, L"+", L"\\+");
-    boost::replace_all(rex, L"?", L"\\?");
-    boost::replace_all(rex, L"*", L".*");
-    rex = L"^" + rex + L"$";
-    return boost::regex_match(s, boost::wregex(rex, boost::wregex::icase));
+static bool wstring_match_wild(const wstring& wildcard, const wstring& s)
+{
+  wstring rex = wildcard;
+  boost::replace_all(rex, L"\\", L"\\\\");
+  boost::replace_all(rex, L"^", L"\\^");
+  boost::replace_all(rex, L".", L"\\.");
+  boost::replace_all(rex, L"$", L"\\$");
+  boost::replace_all(rex, L"|", L"\\|");
+  boost::replace_all(rex, L"(", L"\\(");
+  boost::replace_all(rex, L")", L"\\)");
+  boost::replace_all(rex, L"[", L"\\[");
+  boost::replace_all(rex, L"]", L"\\]");
+  boost::replace_all(rex, L"/", L"\\/");
+  boost::replace_all(rex, L"+", L"\\+");
+  boost::replace_all(rex, L"?", L"\\?");
+  boost::replace_all(rex, L"*", L".*");
+  rex = L"^" + rex + L"$";
+  return boost::regex_match(s, boost::wregex(rex, boost::wregex::icase));
 }
 
 
@@ -94,34 +96,32 @@ typedef UINT32  HWNDX;
 
 static HRESULT GET_MSIE_VERSION(int *major, int *minor)
 {
-     LONG result;
-     HKEY hkey;
-     wchar_t buf[100];
-     DWORD bufsize = 100;
-     DWORD type;
+  LONG result;
+  HKEY hkey;
+  wchar_t buf[100];
+  DWORD bufsize = 100;
+  DWORD type;
 
-     result = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE,
-                              L"SOFTWARE\\Microsoft\\Internet Explorer",
-                              0, KEY_QUERY_VALUE, &hkey);
-     if (result != ERROR_SUCCESS) {
-         return E_FAIL;
-     }
-     result = ::RegQueryValueEx(hkey, L"Version", NULL,
-                                &type, (LPBYTE)buf, &bufsize);
-     
-     if(result != ERROR_SUCCESS) {
-         result = ::RegCloseKey(hkey);
-         return E_FAIL;
-     }
-     result = ::RegCloseKey(hkey);
-     
-     wstring version = buf;
-     size_t majorpos = version.find(L".");
+  result = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", 0, KEY_QUERY_VALUE, &hkey);
+  if (result != ERROR_SUCCESS)
+    return E_FAIL;
+  
+  result = ::RegQueryValueEx(hkey, L"Version", NULL, &type, (LPBYTE)buf, &bufsize);
 
-     *major = _wtoi(version.substr(0, majorpos).c_str());
-     *minor = 0; // TODO
+  if (result != ERROR_SUCCESS) {
+    result = ::RegCloseKey(hkey);
+    return E_FAIL;
+  }
 
-     return S_OK;
+  result = ::RegCloseKey(hkey);
+
+  wstring version = buf;
+  size_t majorpos = version.find(L".");
+
+  *major = _wtoi(version.substr(0, majorpos).c_str());
+  *minor = 0; // TODO
+
+  return S_OK;
 }
 
 #define BreakOnFailed(res) if (FAILED((res))) { break; }
