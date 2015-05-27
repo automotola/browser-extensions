@@ -56,27 +56,22 @@ Channel::~Channel()
  */
 BOOL Channel::Read(LPVOID data, DWORD dataSize, BOOL response/* = FALSE*/)
 {
-    ::WaitForSingleObject(m_events[response 
-                                   ? RESPONSE_AVAILABLE 
-                                   : REQUEST_AVAILABLE], 
-                          INFINITE);
+  ::WaitForSingleObject(m_events[response ? RESPONSE_AVAILABLE : REQUEST_AVAILABLE], INFINITE);
 
-    LPVOID source = ::MapViewOfFile(m_section, FILE_MAP_ALL_ACCESS, 0, 0, dataSize);
-    if (!source) {
-        if (!response) {
-            ::SetEvent(m_events[SERVER_AVAILABLE]);
-        }
-        return FALSE;
-    }
+  LPVOID source = ::MapViewOfFile(m_section, FILE_MAP_ALL_ACCESS, 0, 0, dataSize);
+  if (!source) {
+    if (!response)
+      ::SetEvent(m_events[SERVER_AVAILABLE]);
+    return FALSE;
+  }
 
-    ::CopyMemory(data, source, dataSize);
-    BOOL ok = ::UnmapViewOfFile(source);
+  ::CopyMemory(data, source, dataSize);
+  BOOL ok = ::UnmapViewOfFile(source);
 
-    if (!response) {
-        ::SetEvent(m_events[SERVER_AVAILABLE]);
-    }
-    
-    return ok;
+  if (!response)
+    ::SetEvent(m_events[SERVER_AVAILABLE]);
+
+  return ok;
 }
 
 

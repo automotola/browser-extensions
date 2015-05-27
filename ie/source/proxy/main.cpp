@@ -2,176 +2,185 @@
 
 #include <SDKDDKVer.h>
 #include <windows.h>
-
 #include <stdio.h>
 #include <tchar.h>
-
 #include <util.h>
-
 
 /**
  * Helper: error
  */
-bool error(wchar_t *message) 
+bool error(wchar_t const* message) 
 {
-    DWORD error = ::GetLastError();
-
-    logger->error(L"forge.exe error"
-                  L" -> " + wstring(message) +
-                  L" -> " + boost::lexical_cast<wstring>(error));
-    
-    wprintf(L"forge.exe error: %s - %u\n", message, error);
-
-    return false;
+  DWORD error = ::GetLastError();
+  logger->error(L"forge.exe error -> " + wstring(message) + L" -> " + boost::lexical_cast<wstring>(error));
+  wprintf(L"forge.exe error: %s - %u\n", message, error);
+  return false;
 }
-
 
 /**
  * SetProcessPrivilege
  */
 bool SetProcessPrivilege(bool enable)
 {
-    logger->debug(L"forge.exe SetProcessPrivilege"
-                  L" -> " + boost::lexical_cast<wstring>(enable));
+  logger->debug(L"forge.exe SetProcessPrivilege -> " + boost::lexical_cast<wstring>(enable));
+  
+  bool ok = true;
+  HANDLE token = nullptr;
+  LUID luid;
+  TOKEN_PRIVILEGES privileges = { 0 };
+  wstring etext;
 
-    HANDLE token;
-    if (!::OpenProcessToken(::GetCurrentProcess(), 
-                            TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY | TOKEN_READ, 
-                            &token)) {
-        return error(L"SetProcessPrivilege ::GetCurrentProcess");
+  for (;;) {
+    if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY | TOKEN_READ, &token)) {
+      etext = L"SetProcessPrivilege ::GetCurrentProcess";
+      break;
     }
 
-    LUID luid;
     if (!::LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid)) {
-        ::CloseHandle(token);
-        return error(L"SetProcessPrivilege ::LookupPrivilegeValue");
+      etext = L"SetProcessPrivilege ::LookupPrivilegeValue";
+      break;
     }
 
-    TOKEN_PRIVILEGES privileges;
     privileges.PrivilegeCount = 1;
     privileges.Privileges[0].Luid = luid;
     privileges.Privileges[0].Attributes = (enable ? SE_PRIVILEGE_ENABLED : 0);
 
-    if (!::AdjustTokenPrivileges(token, false, &privileges, 0, NULL, NULL)) {
-        ::CloseHandle(token);
-        return error(L"SetProcessPrivilege ::AdjustTokenPrivileges");
-    }
+    if (!::AdjustTokenPrivileges(token, false, &privileges, 0, NULL, NULL))
+      etext = error(L"SetProcessPrivilege ::AdjustTokenPrivileges");
 
+    break;
+  }
+
+  if (!etext.empty())
+    error(etext.c_str());
+
+  if (token)
     ::CloseHandle(token);
 
-    return true;
+  return etext.empty();
 }
-
 
 /**
  * InjectDLL
  */
 bool InjectDLL(DWORD processId, wchar_t *dll)
 {
-    logger->debug(L"forge.exe InjectDLL"
-                  L" -> " + boost::lexical_cast<wstring>(processId) +
-                  L" -> " + wstring(dll));
+  HANDLE process = nullptr;
+  LPVOID address = nullptr;
+  HMODULE module = nullptr;
+  HANDLE thread = nullptr;
+  LPTHREAD_START_ROUTINE LoadLibraryW = nullptr;
+
+  wchar_t path[MAX_PATH] = { 0 };
+  wstring etext;
+
+  for (;;) {
+    if (!dll) {
+      etext = L"null dll name";
+      break;
+    }
+    logger->debug(L"forge.exe InjectDLL -> " + boost::lexical_cast<wstring>(processId)+L" -> " + wstring(dll));
 
     if (!SetProcessPrivilege(true)) {
-        return error(L"InjectDLL SetProcessPrivilege");
+      etext = L"InjectDLL SetProcessPrivilege";
+      break;
     }
 
-    HANDLE process;
     process = ::OpenProcess(PROCESS_ALL_ACCESS, false, processId);
     if (!process) {
-        return error(L"InjectDLL ::OpenProcess");
+      etext = L"InjectDLL ::OpenProcess";
+      break;
     }
 
-    wchar_t path[MAX_PATH] = {0};
     if (!::GetModuleFileName(NULL, path, MAX_PATH)) {
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::GetModuleFileName");
+      etext = L"InjectDLL ::GetModuleFileName";
+      break;
     }
 
     wchar_t* sp = wcsrchr(path, L'\\') + 1;
     wcscpy_s(sp, path + MAX_PATH - sp, dll);
 
-    LPVOID address;
     address = ::VirtualAllocEx(process, NULL, sizeof(path), MEM_COMMIT, PAGE_READWRITE);
     if (!address) {
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::VirtualAllocEx");
+      etext = L"InjectDLL ::VirtualAllocEx";
+      break;
     }
 
     if (!::WriteProcessMemory(process, address, path, sizeof(path), NULL)) {
-        ::VirtualFreeEx(process, address, sizeof(path), MEM_RELEASE);
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::WriteProcessMemory");
+      etext = L"InjectDLL ::WriteProcessMemory";
+      break;
     }
 
-    HMODULE module = ::GetModuleHandle(L"Kernel32");
-    if (module == NULL) {
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::GetModuleHandle");
+    module = ::GetModuleHandle(L"Kernel32");
+    if (!module) {
+      etext = L"InjectDLL ::GetModuleHandle";
+      break;
     }
-
-    LPTHREAD_START_ROUTINE LoadLibraryW;
-    LoadLibraryW = (LPTHREAD_START_ROUTINE)::GetProcAddress(module, 
-                                                            "LoadLibraryW");
+    
+    LoadLibraryW = (LPTHREAD_START_ROUTINE)::GetProcAddress(module, "LoadLibraryW");
     if (LoadLibraryW == NULL) {
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::GetProcAddress");
+      etext = L"InjectDLL ::GetProcAddress";
+      break;
     }
 
-    HANDLE thread;
     thread = ::CreateRemoteThread(process, NULL, 0, LoadLibraryW, address, 0, NULL);
     if (!thread) {
-        ::VirtualFreeEx(process, address, sizeof(path), MEM_RELEASE);
-        ::CloseHandle(process);
-        return error(L"InjectDLL ::CreateRemoteThread");
+      etext = L"InjectDLL ::CreateRemoteThread";
+      break;
     }
 
     ::WaitForSingleObject(thread, INFINITE);
+    break;
+  }
+
+  if (!etext.empty())
+    error(etext.c_str());
+
+  if (address)
     ::VirtualFreeEx(process, address, sizeof(path), MEM_RELEASE);
-
-    //DWORD ec;
-    //::GetExitCodeThread( thread, &ec );
-
-    ::CloseHandle(thread);
+  
+  if (process)
     ::CloseHandle(process);
-    SetProcessPrivilege(false);
 
-    return true;
+  if (thread)
+    ::CloseHandle(thread);
+  
+  SetProcessPrivilege(false);
+
+  return etext.empty();
 }
-
 
 /**
  * main
  */
-int _tmain(int argc, wchar_t* argv[])
+int _tmain(int argc, TCHAR* argv[])
 {
-    // get path
-  wchar_t buf[MAX_PATH] = {0};
-    ::GetModuleFileName(NULL, buf, MAX_PATH);
-    boost::filesystem::wpath modulePath = boost::filesystem::wpath(buf).parent_path();
+  // get path
+  wchar_t buf[MAX_PATH] = { 0 };
+  ::GetModuleFileName(NULL, buf, MAX_PATH);
+  boost::filesystem::wpath modulePath = boost::filesystem::wpath(buf).parent_path();
 
-    // initialize logger
-    logger->initialize(modulePath);
-    logger->debug(L"forge.exe _tmain -> " + modulePath.wstring());
+  // initialize logger
+  logger->initialize(modulePath);
+  logger->debug(L"forge.exe _tmain -> " + modulePath.wstring());
 
-    DWORD exitCode = 1;
-    if (argc > 0) {
+  DWORD exitCode = 1;
+  if (argc > 0) {
 #ifdef _WIN64
-        bool ret = InjectDLL((DWORD)_wtoi(argv[0]), L"frame64.dll");
+    bool ret = InjectDLL((DWORD)_wtoi(argv[0]), L"frame64.dll");
 #else
-        bool ret = InjectDLL((DWORD)_wtoi(argv[0]), L"frame32.dll");
+    bool ret = InjectDLL((DWORD)_wtoi(argv[0]), L"frame32.dll");
 #endif
-        exitCode = ret ? 0 : 2;
-    }
+    exitCode = ret ? 0 : 2;
+  }
 
-    logger->debug(L"forge.exe _tmain exiting"
-                  L" -> " + boost::lexical_cast<wstring>(exitCode));
+  logger->debug(L"forge.exe _tmain exiting -> " + boost::lexical_cast<wstring>(exitCode));
 
-    /**
-     * Possible exit codes:
-     * 0 - success
-     * 1 - invalid/missing command line arguments
-     * 2 - DLL injection failed
-     */
-    return exitCode;
+  /**
+   * Possible exit codes:
+   * 0 - success
+   * 1 - invalid/missing command line arguments
+   * 2 - DLL injection failed
+   */
+  return exitCode;
 }
