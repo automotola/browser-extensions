@@ -2,24 +2,18 @@
 #include "ScriptExtensions.h"
 #include "vendor.h"
 
-
 /**
  * Construction
  *
  * @path Location of script extension directory
  */
-ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload)
-    : m_path(path),
-      pathManifest(path / L"manifest.json")
+ScriptExtensions::ScriptExtensions(const bfs::wpath& path, bool reload) : m_path(path), pathManifest(path / L"manifest.json")
 {
-    logger->debug(L"ScriptExtensions::ScriptExtensions"
-                  L" -> " + path.wstring() +
-                  L" -> " + boost::lexical_cast<wstring>(reload));
-    
-    if (reload)
-        Reload();
-}
+  logger->debug(L"ScriptExtensions::ScriptExtensions -> " + path.wstring() + L" -> " + boost::lexical_cast<wstring>(reload));
 
+  if (reload)
+    Reload();
+}
 
 /**
  * Reload script cache from filesystem
@@ -41,10 +35,9 @@ void ScriptExtensions::Reload()
   if (!bfs::exists(path)) {
     logger->error(L"ScriptExtensions::Reload background_page not found: " + path.wstring());
   }
+
   std::wifstream stream(path.wstring());
-  background_page =
-    wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
-    (std::istreambuf_iterator<wchar_t>())));
+  background_page = wstringpointer(new wstring((std::istreambuf_iterator<wchar_t>(stream)), (std::istreambuf_iterator<wchar_t>())));
 
   // cache content_scripts & styles
   for (auto& script : manifest->content_scripts) {
@@ -57,8 +50,7 @@ void ScriptExtensions::Reload()
         continue;
       }
       std::wifstream stream(path.wstring());
-      wstringpointer script(new wstring((std::istreambuf_iterator<wchar_t>(stream)),
-        (std::istreambuf_iterator<wchar_t>())));
+      wstringpointer script(new wstring((std::istreambuf_iterator<wchar_t>(stream)), (std::istreambuf_iterator<wchar_t>())));
       m_scripts[name] = script;
       logger->info(L"ScriptExtension::Reload cached content_script js: " + path.wstring());
     }
@@ -79,7 +71,6 @@ void ScriptExtensions::Reload()
     }
   }
 }
-
 
 /**
  * Parse extension manifest.json 

@@ -199,20 +199,19 @@ void md5::update(const void* a_data, uint32_t a_data_size)
     }
 
     // Buffer remaining input.
-    memcpy(the_buffer+buffer_index, reinterpret_cast<
-        const uint8_t*>(a_data)+input_index, a_data_size-input_index);
+    memcpy(the_buffer+buffer_index, reinterpret_cast<const uint8_t*>(a_data)+input_index, a_data_size-input_index);
 }
 
 void md5::update(std::istream& a_istream)
 {
-    uint8_t buffer[1024];
+  uint8_t buffer[1024] = { 0 };
 
-    while (a_istream)
-    {
-        a_istream.read(reinterpret_cast<char*>(&buffer[0]), sizeof(buffer));
+  while (a_istream)
+  {
+    a_istream.read(reinterpret_cast<char*>(&buffer[0]), sizeof(buffer));
 
-        update(buffer, static_cast<uint32_t>(a_istream.gcount()));
-    }
+    update(buffer, static_cast<uint32_t>(a_istream.gcount()));
+  }
 }
 
 void md5::update(std::istream& a_istream, uint32_t a_size)

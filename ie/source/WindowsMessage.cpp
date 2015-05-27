@@ -148,17 +148,14 @@ int WindowsMessage::tb_buttoncount(HWND hwnd)
 /**
  * Message: TB_GETBUTTON
  */
-bool WindowsMessage::tb_getbutton(HWND hwnd, int index, 
-                                  TBBUTTON *out)
+bool WindowsMessage::tb_getbutton(HWND hwnd, int index, TBBUTTON *out)
 {
-    if (!::SendMessage(hwnd, TB_GETBUTTON, index, (LPARAM)out)) {
-        logger->error(L"WindowsMessage::tb_getbutton"
-                      L" -> SendMessage failed"
-                      L" -> " + boost::lexical_cast<wstring>(index));
-        return false;
-    }
+  if (!::SendMessage(hwnd, TB_GETBUTTON, index, (LPARAM)out)) {
+    logger->error(L"WindowsMessage::tb_getbutton -> SendMessage failed -> " + boost::lexical_cast<wstring>(index));
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 
@@ -185,159 +182,148 @@ bool WindowsMessage::tb_getbuttoninfo(HWND hwnd, int index, TBBUTTONINFO *out)
 /**
  * Message: TB_SETBUTTONINFO
  */
-bool WindowsMessage::tb_setbuttoninfo(HWND hwnd, int index, 
-                                      TBBUTTONINFO *buttoninfo)
+bool WindowsMessage::tb_setbuttoninfo(HWND hwnd, int index, TBBUTTONINFO *buttoninfo)
 {
-    if (!buttoninfo) {
-        logger->error(L"WindowsMessage::tb_setbuttoninfo invalid buttoninfo");
-        return false;
-    }
+  if (!buttoninfo) {
+    logger->error(L"WindowsMessage::tb_setbuttoninfo invalid buttoninfo");
+    return false;
+  }
 
-    if (!::SendMessage(hwnd, TB_SETBUTTONINFO, index, (LPARAM)buttoninfo)) {
-        logger->error(L"WindowsMessage::tb_setbuttoninfo failed to send message");
-        return false;
-    }
-    
-    return true;   
+  if (!::SendMessage(hwnd, TB_SETBUTTONINFO, index, (LPARAM)buttoninfo)) {
+    logger->error(L"WindowsMessage::tb_setbuttoninfo failed to send message");
+    return false;
+  }
+
+  return true;
 }
-
 
 /**
  * Message: TB_GETITEMRECT
  */
 bool WindowsMessage::tb_getitemrect(HWND hwnd, int index, RECT *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_getitemrect invalid out argument");
-        return false;
-    }
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_getitemrect invalid out argument");
+    return false;
+  }
 
-    if (!::SendMessage(hwnd, TB_GETITEMRECT, index, (LPARAM)out)) {
-        logger->error(L"WindowsMessage::tb_getitemrect failed to send message");
-        return false;
-    }
+  if (!::SendMessage(hwnd, TB_GETITEMRECT, index, (LPARAM)out)) {
+    logger->error(L"WindowsMessage::tb_getitemrect failed to send message");
+    return false;
+  }
 
-    return true;
+  return true;
 }
-
 
 /**
  * Message: TB_GETRECT
  */
 bool WindowsMessage::tb_getrect(HWND hwnd, int idCommand, RECT *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_getrect invalid out argument");
-        return false;
-    }
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_getrect invalid out argument");
+    return false;
+  }
 
-    if (!::SendMessage(hwnd, TB_GETRECT, idCommand, (LPARAM)out)) {
-        logger->error(L"WindowsMessage::tb_getrect failed to send message");
-        return false;
-    }
+  if (!::SendMessage(hwnd, TB_GETRECT, idCommand, (LPARAM)out)) {
+    logger->error(L"WindowsMessage::tb_getrect failed to send message");
+    return false;
+  }
 
-    return true;
+  return true;
 }
-
 
 /**
  * Message: TB_GETMETRICS
  */
 bool WindowsMessage::tb_getmetrics(HWND hwnd, TBMETRICS *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_getmetrics invalid out argument");
-        return false;
-    }
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_getmetrics invalid out argument");
+    return false;
+  }
 
-    ::SendMessage(hwnd, TB_GETMETRICS, 0, (LPARAM)out);
+  ::SendMessage(hwnd, TB_GETMETRICS, 0, (LPARAM)out);
 
-    return true;
+  return true;
 }
-
 
 /**
  * Message: TB_GETIMAGELIST
  */
 bool WindowsMessage::tb_getimagelist(HWND hwnd, HIMAGELIST *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_getimagelist invalid out argument");
-        return false;
-    }
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_getimagelist invalid out argument");
+    return false;
+  }
 
-    *out = NULL;
-    *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETIMAGELIST, 0, 0));
+  *out = NULL;
+  *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETIMAGELIST, 0, 0));
 
-    return *out != NULL;
+  return *out != NULL;
 }
-
 
 /**
  * Message: TB_GETHOTIMAGELIST
  */
 bool WindowsMessage::tb_gethotimagelist(HWND hwnd, HIMAGELIST *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_gethotimagelist invalid out argument");
-        return false;
-    }
-    
-    *out = NULL;
-    *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETHOTIMAGELIST, 0, 0));
-    
-    return *out != NULL;
-}
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_gethotimagelist invalid out argument");
+    return false;
+  }
 
+  *out = NULL;
+  *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETHOTIMAGELIST, 0, 0));
+
+  return *out != NULL;
+}
 
 /**
  * Message: TB_GETPRESSEDIMAGELIST
  */
 bool WindowsMessage::tb_getpressedimagelist(HWND hwnd, HIMAGELIST *out)
 {
-    if (!out) {
-        logger->error(L"WindowsMessage::tb_getpressedimagelist invalid out argument");
-        return false;
-    }
-    
-    *out = NULL;
-    *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETPRESSEDIMAGELIST, 0, 0));
-    
-    return *out != NULL;
-}
+  if (!out) {
+    logger->error(L"WindowsMessage::tb_getpressedimagelist invalid out argument");
+    return false;
+  }
 
+  *out = NULL;
+  *out = reinterpret_cast<HIMAGELIST>(::SendMessage(hwnd, TB_GETPRESSEDIMAGELIST, 0, 0));
+
+  return *out != NULL;
+}
 
 /**
  * Message: TB_SETIMAGELIST
  */
 bool WindowsMessage::tb_setimagelist(HWND hwnd, HIMAGELIST imagelist)
 {
-    return ::SendMessage(hwnd, TB_SETIMAGELIST, 0, (LPARAM)imagelist) != NULL;
+  return ::SendMessage(hwnd, TB_SETIMAGELIST, 0, (LPARAM)imagelist) != NULL;
 }
-
 
 /**
  * Message: TB_SETHOTIMAGELIST
  */
 bool WindowsMessage::tb_sethotimagelist(HWND hwnd, HIMAGELIST imagelist)
 {
-    return ::SendMessage(hwnd, TB_SETHOTIMAGELIST, 0, (LPARAM)imagelist) != NULL;
+  return ::SendMessage(hwnd, TB_SETHOTIMAGELIST, 0, (LPARAM)imagelist) != NULL;
 }
-
 
 /**
  * Message: TB_SETPRESSEDIMAGELIST
  */
 bool WindowsMessage::tb_setpressedimagelist(HWND hwnd, HIMAGELIST imagelist)
 {
-    return ::SendMessage(hwnd, TB_SETPRESSEDIMAGELIST, 0, (LPARAM)imagelist) != NULL;
+  return ::SendMessage(hwnd, TB_SETPRESSEDIMAGELIST, 0, (LPARAM)imagelist) != NULL;
 }
-
 
 /**
  * Message: TB_CHANGEBITMAP
  */
 bool WindowsMessage::tb_changebitmap(HWND hwnd, int idCommand, int index)
 {
-    return ::SendMessage(hwnd, TB_CHANGEBITMAP, (WPARAM)idCommand, (LPARAM)index) == TRUE;
+  return ::SendMessage(hwnd, TB_CHANGEBITMAP, (WPARAM)idCommand, (LPARAM)index) == TRUE;
 }
