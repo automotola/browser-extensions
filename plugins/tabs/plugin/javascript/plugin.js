@@ -33,10 +33,10 @@ var patternToReStr = function (str) {
 	} else {
 		re += host;
 	}
-	
+
 	// Path
 	re += path.replace(/\*/g, '.*');
-	
+
 	return "^"+re+"$";
 };
 
@@ -75,7 +75,7 @@ forge['tabs'] = {
 		}
 		forge.internal.call("tabs.open", options, success, error);
 	},
-	
+
 	/**
 	 * Close the tab that makes the call, intended to be called from foreground
 	 * @param {function({message: string}=} error

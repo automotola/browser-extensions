@@ -8,30 +8,85 @@
  * debug logger
  */
 function loggerpriv(message) {
-    window.extensions.log("api-priv-ie.js", message);
-};
+  window.console.log(message);
+}
+
+function clone(obj) {
+  if (null == obj || "object" != typeof obj) return obj;
+  var copy = obj.constructor();
+  for (var attr in obj) {
+      if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+  }
+  return copy;
+}
 
 
 /**
  * console.log|error|debug
  */
-function logBackground(level, message) {
+function logBackground(level, message, color) {
     var element = document.getElementById("forgeconsole");
     if (element) {
         var node = document.createElement("span");
         node.innerText = message + "\n";
+        if (color) {
+            node.style.color = color
+        }
         element.appendChild(node);
+        element.scrollIntoView(false);
     } else {
         window.extensions.log("fallback-priv" + level, message);
     }
 };
 window.console = {
-    log   : function(message){ logBackground("log",   message); },
-    debug : function(message){ logBackground("debug", message); },
-    info  : function(message){ logBackground("info",  message); },
-    warn  : function(message){ logBackground("warn",  message); },
-    error : function(message){ logBackground("error", message); }
+    log   : function(message){ logBackground("log",   parseArgs(arguments));  },
+    debug : function(message){ logBackground("debug", parseArgs(arguments)); },
+    info  : function(message){ logBackground("info",  parseArgs(arguments), 'blue'); },
+    warn  : function(message){ logBackground("warn",  parseArgs(arguments), 'orange'); },
+    error : function(message){ logBackground("error", parseArgs(arguments), 'red'); }
 };
+
+function parseArgs(arr) {
+  var res = []
+  for (var i = 0; i < arr.length; i++) {
+    res.push(parseObject(arr[i]))
+  }
+  return res.join(', ')
+}
+
+function parseObject(obj, level) {
+  level = level || 0
+  var indent = new Array(level * 2).join(' ')
+  level++
+  var message
+  if (Array.isArray(obj)) {
+    message = obj
+  }
+  else if (typeof obj == 'object') {
+    message = '{\n'
+    for (var index in obj) {
+      if (obj.hasOwnProperty(index)) {
+        var value = obj[index]
+
+        if (!!(value && value.constructor && value.call && value.apply)) {
+          value = "[function]"
+        }
+
+        if (typeof obj == 'object') {
+          value = parseObject(value, level)
+        }
+
+        message += indent + '  ' + index + ':  ' + value + '\n'
+      }
+    }
+    message += indent + ' }'
+  }
+  else {
+    message = obj
+  }
+
+  return message
+}
 
 
 /**
@@ -246,6 +301,8 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         get: function(params, success, error) {
+          loggerpriv('Get prefs');
+
             window.extensions.prefs_get(forge.config.uuid, params.key,
                                         function(value) {
                                             try {
@@ -382,7 +439,7 @@ var apiImpl = {
             params_.error   = typeof params_.error   === 'function' ? params_.error   : function(){};
 
             // Copy params to prevent overwriting of original success/error
-            var params = $.extend({}, params_);
+            var params = clone(params_);
             params.success = success;
             params.error = function(xhr, status, err) {
                 json = safe_jstringify(params);
@@ -392,9 +449,9 @@ var apiImpl = {
 
             // check arguments
             params.type = params.type ? params.type : "GET";
-            params.data = params.data ? params.data : "";
+            //params.data = params.data ? params.data : ""; doesn't work for jquery
             params.timeout = params.timeout ? params.timeout : 60000;
-            params.headers = params.headers ? params.headers : {};
+            // params.headers = params.headers ? params.headers : {}; doesn't work for jquery
             params.accepts = params.accepts ? params.accepts : ["*/*"];
             params.accepts = typeof params.accepts === "string" ? [params.accepts] : params.accepts;
 
@@ -409,7 +466,7 @@ var apiImpl = {
 
             try {
                 // TODO headers
-                params.contentType = params.contentType ? params.contentType : "text/html";
+                params.contentType = params.contentType ? params.contentType : "application/x-www-form-urlencoded";
                 window.extensions.xhr(params.type,
                                       params.url,
                                       params.data,
@@ -429,14 +486,6 @@ var apiImpl = {
                                       },
                                       function(data) {
                                           if (typeof error !== "function") return;
-                                          try {
-                                              var json = JSON.parse(data);
-                                              data = json;
-                                          } catch (e) {
-                                              loggerpriv("request.ajax" +
-                                                         " json error -> " + data);
-                                              data = e;
-                                          }
                                           error(data);
                                      });
             } catch (e) {
@@ -592,51 +641,69 @@ var apiImpl = {
         }
     },
     cookies: {
-        get: function (params, success, error) {
-            window.extensions.cookies_get('https://' + params.domain + params.path, params.name,
-                function (content) {
-                    if (typeof success === "function") {
-                        var res = function (str) {
-                            var obj = []
-                            var pairs = str.split(/; */);
+      get: function (params, success, error) {
+          window.extensions.cookies_get('https://' + params.domain + params.path, params.name,
+              function (content) {
+                  if (typeof success === "function") {
+                      var res = function (str) {
+                          var obj = []
+                          var pairs = str.split(/; */);
 
-                            pairs.forEach(function (pair) {
-                                var eq_idx = pair.indexOf('=')
-                                if (eq_idx < 0) {
-                                    return;
-                                }
+                          pairs.forEach(function (pair) {
+                              var eq_idx = pair.indexOf('=')
+                              if (eq_idx < 0) {
+                                  return;
+                              }
 
-                                var key = pair.substr(0, eq_idx).trim()
-                                var val = pair.substr(++eq_idx, pair.length).trim();
+                              var key = pair.substr(0, eq_idx).trim()
+                              var val = pair.substr(++eq_idx, pair.length).trim();
 
-                                // quoted values
-                                if ('"' == val[0]) {
-                                    val = val.slice(1, -1);
-                                }
-                                var valdec = "";
-                                try {
-                                    valdec = decodeURIComponent(val);
+                              // quoted values
+                              if ('"' == val[0]) {
+                                  val = val.slice(1, -1);
+                              }
+                              var valdec = "";
+                              try {
+                                  valdec = decodeURIComponent(val);
 
-                                } catch (e) {
-                                    valdec = val;
-                                }
-                                obj.push({ name: key, value: valdec });
-                            });
+                              } catch (e) {
+                                  valdec = val;
+                              }
+                              obj.push({ name: key, value: valdec });
+                          });
 
-                            return obj;
-                        }(content);
+                          return obj;
+                      }(content);
 
-                        if (res.length > 0)
-                          success(res[0].value);
-                        else
-                          success();
-                    }
-                },
+                      if (res.length > 0)
+                        success(res[0].value);
+                      else
+                        success();
+                  }
+              },
 
-                typeof error === "function" ? error : function () { });
-        },
+              typeof error === "function" ? error : function () { }
+          );
+      },
+      set: function (params, success) {
+        success = success || function () {}
+        setTimeout(success, 10)
+      },
       watch: function(params, success) {
-        throw 'Implement api-priv-ie.js/cookies.watch'
+        var old;
+
+        function check() {
+          apiImpl.cookies.get(params, function(cookie) {
+            if (cookie != old) {
+              old = cookie;
+              success(cookie);
+            }
+
+            setTimeout(check, 5000);
+          });
+        }
+
+        check();
       },
       remove: function (params) {
           return window.extensions.cookies_remove(params.url, params.name);

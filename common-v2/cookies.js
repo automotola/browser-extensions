@@ -1,4 +1,7 @@
 forge['cookies'] = {
+  set: function (options, success, error) {
+    internal.priv.call("cookies.set", options, success, error);
+  },
   get: function (domain, path, name, success, error) {
     internal.priv.call("cookies.get", {
       domain: domain, path: path, name: name

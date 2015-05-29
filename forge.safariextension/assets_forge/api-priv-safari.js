@@ -17,7 +17,7 @@ function onMessage(msgEvt) {
 	//public method call or broadcast
 	if(msg.method == 'message') {
 		return processMessage(msg)
-	} 
+	}
 
 	function handleResult (status) {
 		return function (content) {
@@ -58,7 +58,7 @@ function processMessage(msg) {
 
 			var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab;
 			activeTab.page && activeTab.page.dispatchMessage(bridgeId, {method: 'message', event: 'broadcast', data: msg.params.data})
-		}		
+		}
 		return
 	}
 
@@ -81,7 +81,7 @@ forge.message.listen = function(type, callback, error) {
 	listen('broadcast-background', function(message) {
 		if (type !== null && type !== message.type) return
 		callback(message.content, function(reply) {
-			if (!message.id) return 
+			if (!message.id) return
 			sendToTabs(message.id, reply)
 		})
 	})
@@ -101,7 +101,7 @@ forge.message.broadcast = function (type, content, callback, error) {
 
 forge.message.toFocussed = function (type, content, callback,error) {
 	var activeTab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
-	if(!activeTab.page) return 
+	if(!activeTab.page) return
 	var id = forge.tools.UUID()
 
 	if(callback) {
@@ -187,38 +187,31 @@ var apiImpl = {
 	},
 	prefs: {
 		get: function (params, success, error) {
-			success(decodeURIComponent(window.localStorage.getItem(params.key)));
+			success(decodeURIComponent(safari.extension.settings[params.key]));
 		},
 		set: function (params, success, error) {
-			success(window.localStorage.setItem(params.key, encodeURIComponent(params.value)));
+			success(safari.extension.settings[params.key] = encodeURIComponent(params.value));
 		},
 		keys: function (params, success, error) {
-			var keys = [];
-			for (var i=0; i<window.localStorage.length; i++) {
-				keys.push(window.localStorage.key(i));
-			}
-			success(keys);
+			success(Object.keys(safari.extension.settings));
 		},
 		all: function (params, success, error) {
-			var all = {};
-			for (var i=0; i<window.localStorage.length; i++) {
-				var key = window.localStorage.key(i)
-				all[key] = window.localStorage.getItem(key);
-			}
-			success(all);
+			success(safari.extension.settings);
 		},
 		clear: function (params, success, error) {
-			success(window.localStorage.removeItem(params.key));
+      delete safari.extension.settings[params.key];
+			success();
 		},
 		clearAll: function (params, success, error) {
-			success(window.localStorage.clear());
+      safari.extension.settings = {};
+			success();
 		}
 	},
-	
+
 	request: {
 		/**
 		 * Implementation of api.ajax
-		 * 
+		 *
 		 * success and error callbacks are taken from positional arguments,
 		 * not from the options.success and options.error values.
 		 */
@@ -228,7 +221,7 @@ var apiImpl = {
 			params.success = success;
 			params.error = function(xhr, status, err) {
 				error({
-					message: 'api.ajax with ' + JSON.stringify(params) + 'failed. ' + status + ': ' + err, 
+					message: 'api.ajax with ' + JSON.stringify(params) + 'failed. ' + status + ': ' + err,
 					type: "EXPECTED_FAILURE",
 					statusCode: xhr.status
 				});
@@ -250,15 +243,22 @@ var apiImpl = {
 				}
 			}
 		},
-		open: function (params, success, error) {
-			if (params.keepFocus) {
-				var currentTab = safari.application.activeBrowserWindow.activeTab;
-				safari.application.activeBrowserWindow.openTab().url = params.url;
-				currentTab.activate();
-			} else {
-				safari.application.activeBrowserWindow.openTab().url = params.url;
-			}
-			success();
+    open: function (params, success, error) {
+      var currentTab = safari.application.activeBrowserWindow.activeTab;
+      var tab = safari.application.activeBrowserWindow.openTab();
+
+      tab.addEventListener("navigate", success, false);
+
+      tab.url = params.url;
+
+      if (params.keepFocus) currentTab.activate();
+    },
+		updateCurrent: function (params, success, error) {
+      var tab = safari.application.activeBrowserWindow.activeTab;
+
+      tab.addEventListener("navigate", success, false);
+
+      tab.url = params.url;
 		},
 		getCurrentTabUrl: function(params, success) {
 			var tab = safari.application.activeBrowserWindow && safari.application.activeBrowserWindow.activeTab
@@ -266,11 +266,11 @@ var apiImpl = {
 		}
 
 	},
-	
+
 	button: {
 		setIcon: function (url, success, error) {
 			var toolbarButton = safari.extension.toolbarItems[0];
-			
+
 			if (toolbarButton) {
 				toolbarButton.image = url;
 				success();
@@ -325,7 +325,7 @@ var apiImpl = {
 				toolbarButton.popover = safari.extension.createPopover(forge.tools.UUID(), url);
 				toolbarButton.command = null;
 			}
-			
+
 			success();
 		},
 		setBadge: function (number, success, error) {
@@ -361,7 +361,7 @@ var apiImpl = {
 			success();
 		}
 	},
-	
+
 	logging: {
 		log: function (params, success, error) {
 			if (typeof console !== "undefined") {
@@ -407,8 +407,11 @@ var apiImpl = {
 	  get: function(p, cb) {
 	  	setTimeout(cb, 10)
 	  },
+	  set: function(p, cb) {
+      cb = cb || function () {}
+	  	setTimeout(cb, 10)
+    },
 	  watch: function(p, cb) {
-	    
 	  }
 	}
 }

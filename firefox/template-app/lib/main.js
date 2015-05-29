@@ -239,6 +239,11 @@ var apiImpl = {
 				}
 			});
 		},
+    updateCurrent: function (params, success) {
+      var tab = require('tabs').activeTab;
+      tab.url = params.url;
+      success(tab)
+    },
 		closeCurrent: function () {
 			this.tab.close();
 		}
@@ -317,6 +322,10 @@ var apiImpl = {
       var cookie_pairs = querystring.parse(cookies_string, '; ', '=');
       var cookie_val = cookie_pairs[p.name];
       cb(cookie_val);
+    },
+    set: function (p, cb) {
+      cb = cb || function () {}
+      setTimeout(cb, 10)
     },
     watch: function(p, cb) {
       function handleCookie(cookie, type) {

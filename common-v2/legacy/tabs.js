@@ -71,6 +71,18 @@ forge['tabs'] = {
 			keepFocus: keepFocus
 		}, success, error);
 	},
+  /**
+   * Update a current browser window, or (on mobile) a modal view.
+   *
+   * @param {string} url The URL to open in the new window.
+   * @param {function()=} success
+   * @param {function({message: string}=} error
+   */
+  'updateCurrent': function (url, success, error) {
+    internal.priv.call("tabs.updateCurrent", {
+      url: url
+    }, success, error);
+  },
 	/**
 	 * Open a new browser window, or (on mobile) a modal view. With options as an object
 	 *

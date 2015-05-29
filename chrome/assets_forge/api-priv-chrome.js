@@ -269,8 +269,11 @@ var apiImpl = {
         success(tab.url);
       });
     },
-		open: function (params, success, error) {
-			chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
+    open: function (params, success, error) {
+      chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
+    },
+		updateCurrent: function (params, success, error) {
+			chrome.tabs.update({url: params.url}, success);
 		},
 		closeCurrent: function (params, success, error) {
 			if (params.hash) {
@@ -384,6 +387,16 @@ var apiImpl = {
 		}
 	},
   cookies: {
+    /*
+     * spec: https://developer.chrome.com/extensions/cookies#method-set
+     */
+    set: function(options, cb) {
+      cb = cb || function () {}
+      chrome.cookies.set(options, cb)
+    },
+    /*
+     * spec: https://developer.chrome.com/extensions/cookies#method-getAll
+     */
     get: function(p, cb) {
       chrome.cookies.getAll({domain: p.domain}, function(cookies) {
         for (var i = 0; i < cookies.length; i ++) {
@@ -396,8 +409,10 @@ var apiImpl = {
         }
         cb()
       })
-
     },
+    /*
+     * spec: https://developer.chrome.com/extensions/cookies#event-onChanged
+     */
     watch: function(p, cb) {
       chrome.cookies.onChanged.addListener(function(e) {
         var c = e.cookie
