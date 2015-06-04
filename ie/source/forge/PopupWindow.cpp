@@ -115,91 +115,90 @@ LRESULT PopupWindow::OnSize(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handle
  *
  * Render the Popup Window
  */
+
+class MyGdiplusHelper
+{
+  ULONG_PTR m_token;
+  Gdiplus::GdiplusStartupInput m_startup_input;
+public:
+  MyGdiplusHelper()
+  {
+    Gdiplus::GdiplusStartup(&m_token, &m_startup_input, NULL);
+  }
+  ~MyGdiplusHelper()
+  {
+    Gdiplus::GdiplusShutdown(m_token);
+  }
+};
+
 LRESULT PopupWindow::OnPaint(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
-  PAINTSTRUCT ps = {0};
+  PAINTSTRUCT ps;
   BeginPaint(&ps);
+  {
+    MyGdiplusHelper gdi_plus_autostart;
+    { /// Gdiplus objects are used locally, because they need to be destroyed before 
+      // get draw area
+      RECT client;
+      ::GetClientRect(m_hWnd, &client);
+      Gdiplus::Rect rect(client.left, client.top, client.right - client.left, client.bottom - client.top);
+      // create Gdiplus Graphics object
+      Gdiplus::Graphics graphics(m_hWnd, FALSE);
+      graphics.SetClip(rect);
 
-  // init gdi+
-  ULONG_PTR gdiplusToken;
-  Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-  Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+      // pens & brushes
+      Gdiplus::Pen pen(Gdiplus::Color(255, 0, 0, 0), 1.0f);
+      Gdiplus::SolidBrush brush(hiddenBrowser.bgcolor);
+      Gdiplus::SolidBrush chromakey(Gdiplus::Color(255, 77, 77, 77));
 
-  // get draw area
-  RECT client;
-  ::GetClientRect(m_hWnd, &client);
-  Gdiplus::Rect rect(client.left, client.top, client.right - client.left, client.bottom - client.top);
+      // draw chromakey background
+      graphics.FillRectangle(&chromakey, rect.X, rect.Y, rect.Width, rect.Height);
 
-  // create Gdiplus Graphics object
-  Gdiplus::Graphics graphics(m_hWnd, FALSE);
-  graphics.SetClip(rect);
+      // draw background
+      graphics.FillRectangle(&brush, rect.X, rect.Y + TAB_SIZE, rect.Width, rect.Height);
 
-  // pens & brushes
-  Gdiplus::Pen pen(Gdiplus::Color(255, 0, 0, 0), 1.0f);
-  Gdiplus::SolidBrush brush(hiddenBrowser.bgcolor);
-  Gdiplus::SolidBrush chromakey(Gdiplus::Color(255, 77, 77, 77));
+      Gdiplus::Point vtx_data [12] = {
+        /// border
+        Gdiplus::Point(rect.X + (TAB_SIZE * 1), rect.Y + TAB_SIZE),
+        Gdiplus::Point(rect.X, rect.Y + TAB_SIZE),
+        Gdiplus::Point(rect.X, rect.Height - 1),
+        Gdiplus::Point(rect.Width - 1, rect.Height - 1),
+        Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE),
+        Gdiplus::Point(rect.X + (TAB_SIZE * 3), rect.Y + TAB_SIZE),
+        /// tab
+        Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
+        Gdiplus::Point((TAB_SIZE * 2), rect.Y),
+        Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE + 1),
+        /// tab_border
+        Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE),
+        Gdiplus::Point((TAB_SIZE * 2), rect.Y),
+        Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE)
+      };
 
-  // draw chromakey background
-  graphics.FillRectangle(&chromakey, rect.X, rect.Y, rect.Width, rect.Height);
+      if (alignment == left) {
+        vtx_data[0] = Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE);
+        vtx_data[1] = Gdiplus::Point(rect.X, rect.Y + TAB_SIZE);
+        vtx_data[2] = Gdiplus::Point(rect.X, rect.Height - 1);
+        vtx_data[3] = Gdiplus::Point(rect.Width - 1, rect.Height - 1);
+        vtx_data[4] = Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE);
+        vtx_data[5] = Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE);
+        vtx_data[6] = Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE + 1);
+        vtx_data[7] = Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y);
+        vtx_data[8] = Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE + 1);
+        vtx_data[9] = Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE);
+        vtx_data[10] = Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y);
+        vtx_data[11] = Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE);
+      }
 
-  // draw background
-  graphics.FillRectangle(&brush, rect.X, rect.Y + TAB_SIZE, rect.Width, rect.Height);
-
-  // draw border
-  if (alignment == left) {
-    Gdiplus::Point border[] = {
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.X, rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.X, rect.Height - 1),
-      Gdiplus::Point(rect.Width - 1, rect.Height - 1),
-      Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE)
-    };
-    graphics.DrawLines(&pen, border, 6);
-  }
-  else {
-    Gdiplus::Point border[] = {
-      Gdiplus::Point(rect.X + (TAB_SIZE * 1), rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.X, rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.X, rect.Height - 1),
-      Gdiplus::Point(rect.Width - 1, rect.Height - 1),
-      Gdiplus::Point(rect.Width - 1, rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.X + (TAB_SIZE * 3), rect.Y + TAB_SIZE)
-    };
-    graphics.DrawLines(&pen, border, 6);
-  }
-
-  // draw tab
-  if (alignment == left) {
-    Gdiplus::Point tab[] = {
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y),
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
-    };
-    graphics.FillPolygon(&brush, tab, 3);
-    Gdiplus::Point tab_border[] = {
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 1), rect.Y + TAB_SIZE),
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 2), rect.Y),
-      Gdiplus::Point(rect.Width - (TAB_SIZE * 3), rect.Y + TAB_SIZE)
-    };
-    graphics.DrawLines(&pen, tab_border, 3);
-  } else {
-    Gdiplus::Point tab[] = {
-      Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE + 1),
-      Gdiplus::Point((TAB_SIZE * 2), rect.Y),
-      Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE + 1)
-    };
-    graphics.FillPolygon(&brush, tab, 3);
-    Gdiplus::Point tab_border[] = {
-      Gdiplus::Point((TAB_SIZE * 1), rect.Y + TAB_SIZE),
-      Gdiplus::Point((TAB_SIZE * 2), rect.Y),
-      Gdiplus::Point((TAB_SIZE * 3), rect.Y + TAB_SIZE)
-    };
-    graphics.DrawLines(&pen, tab_border, 3);
-  }
-
-  // shutdown gdi+
-  Gdiplus::GdiplusShutdown(gdiplusToken);
+      // draw border
+      graphics.DrawLines(&pen, vtx_data, 6);
+      // draw tab
+      graphics.FillPolygon(&brush, vtx_data + 6, 3);
+      graphics.DrawLines(&pen, vtx_data + 9, 3);
+      /// Gdiplus objects are destroyed here
+    } 
+    /// Gdiplus::GdiplusShutdown happens here
+  } 
 
   EndPaint(&ps);
   handled = TRUE;

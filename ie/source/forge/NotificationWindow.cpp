@@ -104,6 +104,22 @@ void NotificationWindow::Initialize()
 }
 
 
+
+class MyGdiplusHelper
+{
+  ULONG_PTR m_token;
+  Gdiplus::GdiplusStartupInput m_startup_input;
+public:
+  MyGdiplusHelper()
+  {
+    Gdiplus::GdiplusStartup(&m_token, &m_startup_input, NULL);
+  }
+  ~MyGdiplusHelper()
+  {
+    Gdiplus::GdiplusShutdown(m_token);
+  }
+};
+
 /**
  * Event: OnPaint
  *
@@ -111,77 +127,58 @@ void NotificationWindow::Initialize()
  */
 LRESULT NotificationWindow::OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-  PAINTSTRUCT ps = { 0 };
+  PAINTSTRUCT ps;
   BeginPaint(&ps);
+  {
+    MyGdiplusHelper gdi_plus_autostart;
+    {
+      // get draw area
+      RECT clientRect;
+      ::GetClientRect(m_hWnd, &clientRect);
+      // create Gdiplus Graphics object
+      Gdiplus::Graphics graphics(m_hWnd, FALSE);
+      graphics.SetClip(Gdiplus::Rect(clientRect.left, clientRect.top, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top));
 
-  // init gdi+
-  ULONG_PTR gdiplusToken;
-  Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-  Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+      // draw a background
+      Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(DEFAULT_ALPHA, 255, 255, 255));
+      graphics.FillRectangle(&backgroundBrush, clientRect.left, clientRect.top, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
 
-  // get draw area
-  RECT clientRect = { 0 };
-  ::GetClientRect(m_hWnd, &clientRect);
+      // shrink draw area 
+      int inset = 4;
+      clientRect.left += inset;
+      clientRect.top += inset;
+      clientRect.right -= inset;
+      clientRect.bottom -= inset;
 
-  // create Gdiplus Graphics object
-  Gdiplus::Graphics graphics(m_hWnd, FALSE);
-  graphics.SetClip(Gdiplus::Rect(clientRect.left,
-    clientRect.top,
-    clientRect.right - clientRect.left,
-    clientRect.bottom - clientRect.top));
+      // whack a logo TODO
+      //Bitmap* bitmap = new Bitmap(m_icon.c_str(), FALSE);
+      int bitmapWidth = 0;//bitmap->GetWidth(); 
+      int bitmapHeight = 15;//bitmap->GetHeight(); 
+      //graphics->DrawImage(bitmap, clientRect.left, clientRect.top, 
+      //bitmapWidth, bitmapHeight); 
 
-  // draw a background
-  Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(DEFAULT_ALPHA, 255, 255, 255));
-  graphics.FillRectangle(&backgroundBrush,
-    clientRect.left,
-    clientRect.top,
-    clientRect.right - clientRect.left,
-    clientRect.bottom - clientRect.top);
+      // draw a separator
+      Gdiplus::Pen blackPen(Gdiplus::Color(0, 0, 0), 1.0f);
+      graphics.DrawLine(&blackPen, clientRect.left, clientRect.top + bitmapHeight + inset, clientRect.right, clientRect.top + bitmapHeight + inset);
 
-  // shrink draw area 
-  int inset = 4;
-  clientRect.left += inset;
-  clientRect.top += inset;
-  clientRect.right -= inset;
-  clientRect.bottom -= inset;
+      // setup text properties
+      Gdiplus::Font titleFont(L"Verdana", 10, Gdiplus::FontStyleBold);
+      Gdiplus::Font textFont(L"Verdana", 10, Gdiplus::FontStyleRegular);
+      Gdiplus::RectF titleRect((float)clientRect.left + inset + bitmapWidth, (float)clientRect.top, (float)clientRect.right, 20.0f);
+      Gdiplus::RectF textRect((float)clientRect.left,
+        (float)clientRect.top + bitmapHeight + (inset * 2),
+        (float)clientRect.right,
+        (float)clientRect.bottom - bitmapHeight - (inset * 2));
+      Gdiplus::StringFormat format;
+      format.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
+      format.SetFormatFlags(Gdiplus::StringFormatFlagsLineLimit);
+      Gdiplus::SolidBrush blackBrush(Gdiplus::Color(255, 0, 0, 0));
 
-  // whack a logo TODO
-  //Bitmap* bitmap = new Bitmap(m_icon.c_str(), FALSE);
-  int bitmapWidth = 0;//bitmap->GetWidth(); 
-  int bitmapHeight = 15;//bitmap->GetHeight(); 
-  //graphics->DrawImage(bitmap, clientRect.left, clientRect.top, 
-  //bitmapWidth, bitmapHeight); 
-
-  // draw a separator
-  Gdiplus::Pen blackPen(Gdiplus::Color(0, 0, 0), 1.0f);
-  graphics.DrawLine(&blackPen,
-    clientRect.left,
-    clientRect.top + bitmapHeight + inset,
-    clientRect.right,
-    clientRect.top + bitmapHeight + inset);
-
-  // setup text properties
-  Gdiplus::Font titleFont(L"Verdana", 10, Gdiplus::FontStyleBold);
-  Gdiplus::Font textFont(L"Verdana", 10, Gdiplus::FontStyleRegular);
-  Gdiplus::RectF titleRect((float)clientRect.left + inset + bitmapWidth,
-    (float)clientRect.top,
-    (float)clientRect.right,
-    (float)20);
-  Gdiplus::RectF textRect((float)clientRect.left,
-    (float)clientRect.top + bitmapHeight + (inset * 2),
-    (float)clientRect.right,
-    (float)clientRect.bottom - bitmapHeight - (inset * 2));
-  Gdiplus::StringFormat format;
-  format.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
-  format.SetFormatFlags(Gdiplus::StringFormatFlagsLineLimit);
-  Gdiplus::SolidBrush blackBrush(Gdiplus::Color(255, 0, 0, 0));
-
-  // draw the message
-  graphics.DrawString(m_title.c_str(), (int)m_title.length(), &titleFont, titleRect, &format, &blackBrush);
-  graphics.DrawString(m_message.c_str(), (int)m_message.length(), &textFont, textRect, &format, &blackBrush);
-
-  // shutdown gdi+
-  Gdiplus::GdiplusShutdown(gdiplusToken);
+      // draw the message
+      graphics.DrawString(m_title.c_str(), (int)m_title.length(), &titleFont, titleRect, &format, &blackBrush);
+      graphics.DrawString(m_message.c_str(), (int)m_message.length(), &textFont, textRect, &format, &blackBrush);
+    }
+  }
 
   EndPaint(&ps);
   bHandled = TRUE;
