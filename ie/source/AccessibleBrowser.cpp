@@ -34,7 +34,7 @@ Accessible::~Accessible()
  */
 Accessible::vector Accessible::children() 
 {
-  HRESULT hr;
+  HRESULT hr = S_OK;
   Accessible::vector ret;
   std::vector<CComVariant> accessors;
 
@@ -42,24 +42,15 @@ Accessible::vector Accessible::children()
   long countObtained = 0;
 
   for (;;) {
-    if (!iaccessible) {
-      logger->error(L"Accessible::children invalid IAccessible");
-      break;
-    }
+    BreakOnNullWithErrorLog(iaccessible, L"Accessible::children invalid IAccessible");
 
     hr = iaccessible->get_accChildCount(&count);
-    if (FAILED(hr)) {
-      logger->debug(L"Accessible::children failed to get child count -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithDebugLog(hr, L"Accessible::children failed to get child count -> " + logger->parse(hr));
 
     // get accessors
     accessors.resize(count);
     hr = ::AccessibleChildren(iaccessible, 0, count, &accessors[0], &countObtained);
-    if (FAILED(hr)) {
-      logger->debug(L"Accessible::children failed to get accessors -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithDebugLog(hr, L"Accessible::children failed to get accessors -> " + logger->parse(hr));
 
     // iterate through accessors
     for (long n = 0; n < countObtained; ++n) {
@@ -86,8 +77,7 @@ Accessible::vector Accessible::children()
 /**
  * Construction: AccessibleBrowser
  */
-AccessibleBrowser::AccessibleBrowser(HWND hwnd)
-    : m_hwnd(hwnd)
+AccessibleBrowser::AccessibleBrowser(HWND hwnd) : m_hwnd(hwnd)
 {
 }
 
@@ -113,10 +103,7 @@ wstringvector AccessibleBrowser::tabs()
     if (m_hwnd == NULL) {
       logger->debug(L"AccessibleBrowser::tabs calling EnumWindows for IE hwnd");
       ::EnumWindows(AccessibleBrowser::EnumWndProc, (LPARAM)&m_hwnd);
-      if (!m_hwnd) {
-        logger->debug(L"AccessibleBrowser::tabs could not get active tab");
-        break;
-      }
+      BreakOnNullWithDebugLog(m_hwnd, L"AccessibleBrowser::tabs could not get active tab");
     }
 
     logger->debug(L"AccessibleBrowser::tabs active tab -> " + boost::lexical_cast<wstring>(m_hwnd));
@@ -124,31 +111,18 @@ wstringvector AccessibleBrowser::tabs()
     // Get DirectUIHWND for IEFrame
     // TODO test on IE9
     hwnd = ::FindWindowEx(m_hwnd, NULL, L"CommandBarClass", NULL);
-    if (!hwnd) { 
-      logger->error(L"AccessibleBrowser::tabs CommandBarClass failed"); 
-      break; 
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::tabs CommandBarClass failed");
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"ReBarWindow32", NULL);
-    if (!hwnd) {
-      logger->error(L"AccessibleBrowser::tabs ReBarWindow32 failed"); 
-      break;
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::tabs ReBarWindow32 failed");
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"TabBandClass", NULL);
-    if (!hwnd) {
-      logger->error(L"AccessibleBrowser::tabs TabBandClass failed"); 
-      break; 
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::tabs TabBandClass failed");
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"DirectUIHWND", NULL);
-    if (!hwnd) {
-      logger->error(L"AccessibleBrowser::tabs DirectUIHWND failed"); 
-      break; 
-    }
-
-    // get IAccessible for IE
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::tabs DirectUIHWND failed");
     
+    // get IAccessible for IE
     hr = ::AccessibleObjectFromWindow(hwnd, OBJID_WINDOW, IID_IAccessible, (void**)&iaccessible);
     BreakOnFailed(hr);
     BreakOnNull(iaccessible, hr);
@@ -163,9 +137,7 @@ wstringvector AccessibleBrowser::tabs()
           CComBSTR name = nullptr;
           hr = tab->iaccessible->get_accName(CComVariant(CHILDID_SELF), &name);
           if (FAILED(hr) || !name) {
-            logger->debug(L"AccessibleBrowser::tabs could not get tab name"
-              L" -> " + boost::lexical_cast<wstring>(tab->id) +
-              L" -> " + logger->parse(hr));
+            logger->debug(L"AccessibleBrowser::tabs could not get tab name -> " + boost::lexical_cast<wstring>(tab->id) + L" -> " + logger->parse(hr));
             continue;
           }
           logger->debug(L"AccessibleBrowser::tabs -> " + boost::lexical_cast<wstring>(tab->id) + L" -> " + wstring(name));
@@ -250,19 +222,13 @@ HRESULT AccessibleBrowser::active(IWebBrowser2 **webBrowser2)
 
   for (;;) {
     instance = ::LoadLibrary(L"OLEACC.DLL");
-    if (!instance) {
-      logger->error(L"AccessibleBrowser::active could not load OLEACC.DLL");
-      break;
-    }
-
+    BreakOnNullWithErrorLog(instance, L"AccessibleBrowser::active could not load OLEACC.DLL");
+    
     // get "IEFrame"
     // gets into a race condition with the rest of the startup code
     //hr = ::EnumWindows(AccessibleBrowser::EnumWndProc, (LPARAM)&ieframe);
     ieframe = ::FindWindowEx(NULL, NULL, L"IEFrame", NULL);
-    if (!ieframe) {
-      logger->error(L"AccessibleBrowser::active could not get IEFrame");
-      break;
-    }
+    BreakOnNullWithErrorLog(ieframe, L"AccessibleBrowser::active could not get IEFrame");
 
     // get "Internet Explorer_Server"
     hwnd = ieframe;
@@ -276,22 +242,13 @@ HRESULT AccessibleBrowser::active(IWebBrowser2 **webBrowser2)
     }
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"TabWindowClass", NULL);
-    if (!hwnd) { 
-      logger->error(L"AccessibleBrowser::active failed: TabWindowClass"); 
-      break;
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::active failed: TabWindowClass");
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"Shell DocObject View", NULL);
-    if (!hwnd) {
-      logger->error(L"AccessibleBrowser::active failed: Shell DocObject View"); 
-      break; 
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::active failed: Shell DocObject View");
 
     hwnd = ::FindWindowEx(hwnd, NULL, L"Internet Explorer_Server", NULL);
-    if (!hwnd) {
-      logger->error(L"AccessibleBrowser::active could not get Internet Explorer_Server");
-      break;
-    }
+    BreakOnNullWithErrorLog(hwnd, L"AccessibleBrowser::active could not get Internet Explorer_Server");
 
     UINT msg = ::RegisterWindowMessage(L"WM_HTML_GETOBJECT");
 
@@ -317,22 +274,13 @@ HRESULT AccessibleBrowser::active(IWebBrowser2 **webBrowser2)
     }
 
     LPFNOBJECTFROMLRESULT object = reinterpret_cast<LPFNOBJECTFROMLRESULT>(::GetProcAddress(instance, "ObjectFromLresult"));
-    if (!object) {
-      logger->error(L"AccessibleBrowser::active could not get HTML Object");
-      break;
-    }
+    BreakOnNullWithErrorLog(object, L"AccessibleBrowser::active could not get HTML Object");
 
     hr = (*object)(result, IID_IHTMLDocument, 0, reinterpret_cast<void**>(&htmlDocument2));
-    if (FAILED(hr)) {
-      logger->error(L"AccessibleBrowser::active could not get IHTMLDocument -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"AccessibleBrowser::active could not get IHTMLDocument -> " + logger->parse(hr));
 
     CComQIPtr<IServiceProvider> serviceProvider(htmlDocument2);
-    if (!serviceProvider) {
-      logger->error(L"AccessibleBrowser::active could not get IServiceProvider -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnNullWithErrorLog(serviceProvider, L"AccessibleBrowser::active could not get IServiceProvider");
 
     hr = serviceProvider->QueryService(SID_SWebBrowserApp, IID_IWebBrowser2, reinterpret_cast<void**>(webBrowser2));
     if (FAILED(hr))

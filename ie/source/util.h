@@ -96,34 +96,40 @@ typedef UINT32  HWNDX;
 
 static HRESULT GET_MSIE_VERSION(int *major, int *minor)
 {
-  LONG result;
-  HKEY hkey;
-  wchar_t buf[100];
-  DWORD bufsize = 100;
+  LONG result = ERROR_SUCCESS;
+  HKEY hkey = nullptr;
+  wchar_t buf[MAX_PATH] = {0};
+  DWORD bufsize = MAX_PATH;
   DWORD type;
 
-  result = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", 0, KEY_QUERY_VALUE, &hkey);
-  if (result != ERROR_SUCCESS)
-    return E_FAIL;
-  
-  result = ::RegQueryValueEx(hkey, L"Version", NULL, &type, (LPBYTE)buf, &bufsize);
-
-  if (result != ERROR_SUCCESS) {
-    result = ::RegCloseKey(hkey);
-    return E_FAIL;
+  for (;;) {
+    result = ::RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Internet Explorer", 0, KEY_QUERY_VALUE, &hkey);
+    if (result != ERROR_SUCCESS)
+      break;
+    
+    result = ::RegQueryValueEx(hkey, L"Version", NULL, &type, (LPBYTE)buf, &bufsize);
+    break;
   }
 
-  result = ::RegCloseKey(hkey);
+  if (hkey)
+    ::RegCloseKey(hkey);
 
-  wstring version = buf;
+  HRESULT hr = ((result == ERROR_SUCCESS) ? S_OK : E_FAIL);
+
+  wstring version(buf);
   size_t majorpos = version.find(L".");
 
   *major = _wtoi(version.substr(0, majorpos).c_str());
   *minor = 0; // TODO
 
-  return S_OK;
+  return hr;
 }
 
 #define BreakOnFailed(res) if (FAILED((res))) { break; }
-#define BreakOnNull(ptr, res) if (!(ptr)) { res = E_POINTER; break; }
+#define BreakOnFailedWithDebugLog(res, message) if (FAILED((res))) { logger->debug((message)); break; }
+#define BreakOnFailedWithErrorLog(res, message) if (FAILED((res))) { logger->debug((message)); break; }
+
+#define BreakOnNull(ptr, res) if (!(ptr)) { (res) = E_POINTER; break; }
+#define BreakOnNullWithDebugLog(ptr, message) if(!(ptr)) { logger->debug((message)); break; }
+#define BreakOnNullWithErrorLog(ptr, message) if(!(ptr)) { logger->error((message)); break; }
 
