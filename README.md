@@ -126,13 +126,27 @@ Testing OpenForge
 
 Changing C++ libraries
 ---------------------
-### Windows
+### Windows, using binary packages
 
 * Boost: Download and install boost_1_57_0-msvc-12.0-32.exe from http://sourceforge.net/projects/boost/files/boost-binaries/1.57.0/
 * Add a BOOST_HOME variable to your environment and set it to where you installed boost, without the trailing slash.
-* As alternative build boost from source, selecting only needed requirements
+
+### Windows, using source packages
+* To build boost from source, selecting only needed requirements
 * Build x64 target `bootstrap.bat && b2 address-model=64 --with-regex --with-filesystem runtime-link=static`
 * Rename $BOOST_HOME/stage/lib -> $BOOST_HOME/stage/lib64
 * Build x86 target `b2 --with-regex --with-filesystem runtime-link=static`
 * Now boost libraries are ready for compiling both x86 and x64 targets
 * Open .\ie\msvc\ForgeIE.sln
+
+Debugging native code on Windows
+---------------------
+* Build solution ForgeIE in debug configuration
+* Install grammarly-test
+* Replace installed dll-s and exe files by ones from Debug directories.
+* Also place correspondent pdb files to have ability to interact with source while debugging
+* Modify BHO project setting Debugging->Command to C:\Program Files %28x86%29\Internet Explorer\iexplore.exe
+* Select Win32 configuration
+* Press F5, you are done.
+
+

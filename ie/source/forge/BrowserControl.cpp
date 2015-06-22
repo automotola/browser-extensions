@@ -106,34 +106,21 @@ void __stdcall BrowserControl::OnNavigateComplete2(IDispatch *idispatch, VARIANT
 
     // Get me some fiddlies
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(idispatch);
-    if (!webBrowser2) {
-      logger->error(L"BrowserControl::OnNavigateComplete2 no valid IWebBrowser2");
-      break;
-    }
+    BreakOnNullWithErrorLog(webBrowser2, L"BrowserControl::OnNavigateComplete2 no valid IWebBrowser2");
 
-    webBrowser2->get_Document(&disp);
-    if (!disp) {
-      logger->error(L"BrowserControl::OnNavigateComplete2 get_Document failed");
-      break;
-    }
+    hr = webBrowser2->get_Document(&disp);
+    BreakOnFailed(hr);
+    BreakOnNullWithErrorLog(disp, L"BrowserControl::OnNavigateComplete2 get_Document failed");
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    if (!htmlDocument2) {
-      logger->error(L"BrowserControl::OnNavigateComplete2 IHTMLDocument2 failed");
-      break;
-    }
+    BreakOnNullWithErrorLog(htmlDocument2, L"BrowserControl::OnNavigateComplete2 IHTMLDocument2 failed");
 
-    htmlDocument2->get_parentWindow(&htmlWindow2);
-    if (!htmlWindow2) {
-      logger->error(L"BrowserControl::OnNavigateComplete2 IHTMLWindow2 failed");
-      break;
-    }
+    hr = htmlDocument2->get_parentWindow(&htmlWindow2);
+    BreakOnFailed(hr);
+    BreakOnNullWithErrorLog(htmlWindow2, L"BrowserControl::OnNavigateComplete2 IHTMLWindow2 failed");
 
     CComQIPtr<IDispatchEx> htmlWindow2Ex(htmlWindow2);
-    if (!htmlWindow2Ex) {
-      logger->error(L"BrowserControl::OnNavigateComplete2 IHTMLWindow2Ex failed");
-      break;
-    }
+    BreakOnNullWithErrorLog(htmlWindow2Ex, L"BrowserControl::OnNavigateComplete2 IHTMLWindow2Ex failed");
 
     // Attach NativeAccessible (forge.tabs.*)
     if (m_nativeAccessible) {
@@ -184,22 +171,14 @@ void __stdcall BrowserControl::OnDocumentComplete(IDispatch *idispatch, VARIANT 
     logger->debug(L"BrowserControl::OnDocumentComplete -> " + wstring(url->bstrVal ? url->bstrVal : L"NIL"));
     // Get me some fiddlies
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(idispatch);
-    if (!webBrowser2) {
-      logger->error(L"BrowserControl::OnDocumentComplete no valid IWebBrowser2");
-      break;
-    }
+    BreakOnNullWithErrorLog(webBrowser2, L"BrowserControl::OnDocumentComplete no valid IWebBrowser2");
 
-    webBrowser2->get_Document(&disp);
-    if (!disp) {
-      logger->error(L"BrowserControl::OnDocumentComplete get_Document failed");
-      break;
-    }
+    hr = webBrowser2->get_Document(&disp);
+    BreakOnFailed(hr);
+    BreakOnNullWithErrorLog(disp, L"BrowserControl::OnDocumentComplete get_Document failed");
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    if (!htmlDocument2) {
-      logger->error(L"BrowserControl::OnDocumentComplete IHTMLDocument2 failed");
-      break;
-    }
+    BreakOnNullWithErrorLog(htmlDocument2, L"BrowserControl::OnDocumentComplete IHTMLDocument2 failed");
 
     // subclass if necessary
     if (subclass && !m_subclasser) {
@@ -348,10 +327,7 @@ HRESULT BrowserControl::AttachControl(BOOL events)
   CComPtr<IUnknown> unknown = nullptr;
   HRESULT hr = E_FAIL;
   for (;;) {
-    if (!m_hWnd) {
-      logger->error(L"BrowserControl::AttachControl no parent");
-      break;
-    }
+    BreakOnNullWithErrorLog(m_hWnd, L"BrowserControl::AttachControl no parent");
 
     hr = ::AtlAxGetControl(m_hWnd, &unknown);
     if (FAILED(hr)) {
@@ -388,7 +364,7 @@ HRESULT BrowserControl::EasyAdvise(IUnknown* unknown)
 {
   m_unknown = unknown;
   ::AtlGetObjectSourceInterface(unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
-  return this->DispEventAdvise(unknown, &m_iid);
+  return DispEventAdvise(unknown, &m_iid);
 }
 
 
@@ -399,5 +375,5 @@ HRESULT BrowserControl::EasyUnadvise()
 {
   logger->debug(L"BrowserControl::EasyUnadvise");
   ::AtlGetObjectSourceInterface(m_unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
-  return this->DispEventUnadvise(m_unknown, &m_iid);
+  return DispEventUnadvise(m_unknown, &m_iid);
 }
