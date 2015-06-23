@@ -233,7 +233,7 @@ var apiImpl = {
             error({message: xhr.statusText});
         }
       };
-      xhr.open(params.method, params.url, true);
+      xhr.open(params.type, params.url, true);
       xhr.send();
 		}
 	},
