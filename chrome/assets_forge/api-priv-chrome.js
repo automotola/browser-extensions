@@ -224,17 +224,27 @@ var apiImpl = {
 		 * not from the options.success and options.error values.
 		 */
 		ajax: function (params, success, error) {
-      var xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-          if (xhr.status == 200)
-            success(xhr.responseText, xhr.statusText, xhr);
+      var http = new XMLHttpRequest()
+      var headers = params.headers
+
+      http.open(params.type, params.url, true)
+
+      if (headers) {
+        Object.keys(headers).forEach(function(key) {
+          http.setRequestHeader(key, headers[key])
+        })
+      }
+
+      http.onreadystatechange = function() {
+        if (http.readyState == 4) {
+          if (http.status == 200 || http.status == 201)
+            success(http.responseText, http.statusText, http)
           else
-            error({message: xhr.statusText});
+            error({message: http.statusText})
         }
-      };
-      xhr.open(params.type, params.url, true);
-      xhr.send();
+      }
+
+      http.send(params.data)
 		}
 	},
 	tabs: {
