@@ -215,18 +215,18 @@ var apiImpl = {
 		 * success and error callbacks are taken from positional arguments,
 		 * not from the options.success and options.error values.
 		 */
-		ajax: function (params_, success, error) {
-			// Copy params to prevent overwriting of original success/error
-			var params = $.extend({}, params_);
-			params.success = success;
-			params.error = function(xhr, status, err) {
-				error({
-					message: 'api.ajax with ' + JSON.stringify(params) + 'failed. ' + status + ': ' + err,
-					type: "EXPECTED_FAILURE",
-					statusCode: xhr.status
-				});
-			}
-			$.ajax(params);
+		ajax: function (params, success, error) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+          if (xhr.status == 200)
+            success(xhr.responseText, xhr.statusText, xhr);
+          else
+            error({message: xhr.statusText});
+        }
+      };
+      xhr.open(params.type, params.url, true);
+      xhr.send();
 		}
 	},
 	tabs: {
