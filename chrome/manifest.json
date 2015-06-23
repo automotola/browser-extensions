@@ -21,11 +21,23 @@ def cpu_permission():
 	else:
 		return []
 
-def cookies_permission():
-		if "cookies" in plugins:
-			return ["cookies"]
+def clipboardread_permission():
+		if "clipboardRead" in plugins:
+			return ["clipboardRead"]
 		else:
 			return []
+
+def clipboardwrite_permission():
+    if "clipboardWrite" in plugins:
+      return ["clipboardWrite"]
+    else:
+      return []
+
+def cookies_permission():
+    if "cookies" in plugins:
+      return ["cookies"]
+    else:
+      return []
 
 def notifications_permission():
 	if "notification" in plugins:
@@ -54,7 +66,7 @@ def get_run_at(run_at):
 	"name": "APP_NAME_HERE",
 	"version": "VERSION_HERE",
 	"description": "DESCRIPTION_HERE",
-	"permissions": ${json.dumps(request_permissions() + activate_patterns() + tabs_permission() + notifications_permission() + cookies_permission() + cpu_permission())},
+	"permissions": ${json.dumps(request_permissions() + activate_patterns() + tabs_permission() + notifications_permission() + cookies_permission() + cpu_permission() + clipboardread_permission() + clipboardwrite_permission() )},
 	"content_security_policy": "script-src 'unsafe-eval'; object-src 'self'",
 	"background": {"page": "forge.html"}{% if value_of("homepage", "") != "" %},
 	"homepage_url": ${json.dumps(value_of("homepage", ""))}{% end %}{% if "activations" in plugins and "config" in plugins["activations"] and "activations" in plugins["activations"]["config"] and len(plugins['activations']['config']['activations']) %},
