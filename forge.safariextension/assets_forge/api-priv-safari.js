@@ -215,11 +215,28 @@ var apiImpl = {
 		 * success and error callbacks are taken from positional arguments,
 		 * not from the options.success and options.error values.
 		 */
-		ajax: function (params, success, error) {
+    ajax: function (params, success, error) {
       var http = new XMLHttpRequest()
       var headers = params.headers
+      var data = params.data
 
       http.open(params.type, params.url, true)
+
+      if (data) {
+        if (!headers || !headers['Content-Type']) {
+          http.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+        }
+
+        if (typeof data != 'string') {
+          try {
+            data = JSON.stringify(params.data)
+          }
+          catch (e) {
+            data = null
+            console.log(e)
+          }
+        }
+      }
 
       if (headers) {
         Object.keys(headers).forEach(function(key) {
@@ -236,8 +253,8 @@ var apiImpl = {
         }
       }
 
-      http.send(params.data)
-		}
+      http.send(data)
+    }
 	},
 	tabs: {
 		closeCurrent: function (params, success, error) {
