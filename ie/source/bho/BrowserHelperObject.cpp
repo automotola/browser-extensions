@@ -55,39 +55,38 @@ _ATL_FUNC_INFO CBrowserHelperObject::OnDownloadCompleteInfo = {
 /**
  * Construction
  */
-CBrowserHelperObject::CBrowserHelperObject()
-    : m_isConnected(false),
-	  m_isAttached(false),
-      m_nativeAccessible(),
-      m_frameProxy(NULL),
-      m_nPageCounter(0),
-      m_nObjCounter(0),
-      m_bIsRefresh(false)
+CBrowserHelperObject::CBrowserHelperObject() : 
+  m_isConnected(false), 
+  m_isAttached(false), 
+  m_nativeAccessible(nullptr), 
+  m_frameProxy(nullptr), 
+  m_nPageCounter(0),
+  m_nObjCounter(0),
+  m_bIsRefresh(false)
 {
-    logger->debug(L"\n----------------------------------------------------------");
-    logger->debug(L"BrowserHelperObject Initializing...");
+  logger->debug(L"\n----------------------------------------------------------");
+  logger->debug(L"BrowserHelperObject Initializing...");
 
-    logger->debug(L"BrowserHelperObject::BrowserHelperObject"
-                  L" -> " + _AtlModule.moduleManifest->uuid +
-                  L" -> " + _AtlModule.moduleCLSID);
+  logger->debug(L"BrowserHelperObject::BrowserHelperObject"
+    L" -> " + _AtlModule.moduleManifest->uuid +
+    L" -> " + _AtlModule.moduleCLSID);
 
-    // load script extensions - TODO user level error handling for load failure
-    m_scriptExtensions = 
-        ScriptExtensions::pointer(new ScriptExtensions(_AtlModule.modulePath));
-    if (!m_scriptExtensions->manifest) {
-        logger->error(L"Failed to read manifest file: " +
-                      m_scriptExtensions->pathManifest.wstring() + 
-                      L" at: " + _AtlModule.modulePath.wstring());
-        ::MessageBox(NULL,
-                     wstring(L"Failed to read manifest. Please check that "
-                             L" manifest.json file is present at " +
-                             _AtlModule.modulePath.wstring() +
-                             L" and properly configured.").c_str(),
-                     VENDOR_COMPANY_NAME,
-                     MB_TASKMODAL | MB_ICONEXCLAMATION);
-        // TODO halt BHO init and exit gracefully
-        return;
-    }
+  // load script extensions - TODO user level error handling for load failure
+  m_scriptExtensions = ScriptExtensions::pointer(new ScriptExtensions(_AtlModule.modulePath));
+  if (!m_scriptExtensions->manifest) {
+    logger->error(L"Failed to read manifest file: " +
+      m_scriptExtensions->pathManifest.wstring() +
+      L" at: " + _AtlModule.modulePath.wstring());
+    ::MessageBox(NULL,
+      wstring(L"Failed to read manifest. Please check that "
+      L" manifest.json file is present at " +
+      _AtlModule.modulePath.wstring() +
+      L" and properly configured.").c_str(),
+      VENDOR_COMPANY_NAME,
+      MB_TASKMODAL | MB_ICONEXCLAMATION);
+    // TODO halt BHO init and exit gracefully
+    return;
+  }
 }
 
 /**
@@ -285,22 +284,22 @@ CBrowserHelperObject::MatchManifest(IWebBrowser2 *webBrowser2, const Manifest::p
 
     // is this a html document?    
     hr = webBrowser2->get_Document(&disp);
+    BreakOnNullWithErrorLog(disp, L"BrowserHelperObject::MatchManifest no document");
     BreakOnFailed(hr);
-    BreakOnNullWithDebugLog(disp, L"BrowserHelperObject::MatchManifest no document");
     
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    BreakOnNullWithDebugLog(htmlDocument2, L"BrowserHelperObject::MatchManifest not an IHTMLDocument2");
+    BreakOnNullWithErrorLog(htmlDocument2, L"BrowserHelperObject::MatchManifest not an IHTMLDocument2");
 
     // is this an iframe ?
     wstring locationtop = location;
     bool const is_not_iframe = m_webBrowser2.IsEqualObject(webBrowser2);
     if (!is_not_iframe) {
       hr = webBrowser2->get_Parent(&disp_parent);
+      BreakOnNullWithErrorLog(disp_parent, L"BrowserHelperObject::MatchManifest not an iframe 1 -> " + location);
       BreakOnFailed(hr);
-      BreakOnNullWithDebugLog(disp_parent, L"BrowserHelperObject::MatchManifest not an iframe 1 -> " + location);
 
       CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2_parent(disp_parent);
-      BreakOnNullWithDebugLog(htmlDocument2_parent, L"BrowserHelperObject::MatchManifest not an iframe 2 -> " + location);
+      BreakOnNullWithErrorLog(htmlDocument2_parent, L"BrowserHelperObject::MatchManifest not an iframe 2 -> " + location);
       
       hr = htmlDocument2_parent->get_URL(&bstr);
       BreakOnFailed(hr);
@@ -345,10 +344,7 @@ void __stdcall CBrowserHelperObject::OnNavigateComplete2(IDispatch *dispatch,  V
 
   for (;;) {
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(dispatch);
-    if (!webBrowser2) {
-      logger->debug(L"BrowserHelperObject::OnNavigateComplete2 failed to obtain IWebBrowser2");
-      break;
-    }
+    BreakOnNullWithErrorLog(webBrowser2, L"BrowserHelperObject::OnNavigateComplete2 failed to obtain IWebBrowser2");
 
     // VARIANT *url chops off file:\\\ for local filesystem  
     hr = webBrowser2->get_LocationURL(&bstr);
@@ -392,7 +388,7 @@ void __stdcall CBrowserHelperObject::OnDocumentComplete(IDispatch *dispatch, VAR
 
   for (;;) {
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(dispatch);
-    BreakOnNullWithDebugLog(webBrowser2, L"BrowserHelperObject::OnDocumentComplete failed to obtain IWebBrowser2");
+    BreakOnNullWithErrorLog(webBrowser2, L"BrowserHelperObject::OnDocumentComplete failed to obtain IWebBrowser2");
 
     // VARIANT *url chops off file:\\\ for local filesystem
     hr = webBrowser2->get_LocationURL(&bstr);
@@ -418,14 +414,14 @@ void __stdcall CBrowserHelperObject::OnDocumentComplete(IDispatch *dispatch, VAR
     // get IHTMLWindow2
     hr = webBrowser2->get_Document(&disp);
     BreakOnFailed(hr);
-    BreakOnNullWithDebugLog(disp, L"BrowserHelperObject::OnDocumentComplete get_Document failed");
+    BreakOnNullWithErrorLog(disp, L"BrowserHelperObject::OnDocumentComplete get_Document failed");
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    BreakOnNullWithDebugLog(htmlDocument2, L"BrowserHelperObject::OnDocumentComplete IHTMLDocument2 failed");
+    BreakOnNullWithErrorLog(htmlDocument2, L"BrowserHelperObject::OnDocumentComplete IHTMLDocument2 failed");
     
     hr = htmlDocument2->get_parentWindow(&htmlWindow2);
     BreakOnFailed(hr);
-    BreakOnNullWithDebugLog(htmlWindow2, L"BrowserHelperObject::OnDocumentComplete IHTMLWindow2 failed");
+    BreakOnNullWithErrorLog(htmlWindow2, L"BrowserHelperObject::OnDocumentComplete IHTMLWindow2 failed");
 
     // attach forge extensions when pages like target=_blank didn't trigger navComplete event
     if (!m_isAttached)
@@ -483,7 +479,6 @@ void __stdcall CBrowserHelperObject::OnDocumentComplete(IDispatch *dispatch, VAR
   }
 }
 
-
 /**
  * Event: OnAttachForgeExtensions
  */
@@ -497,29 +492,29 @@ void __stdcall CBrowserHelperObject::OnAttachForgeExtensions(IDispatch *dispatch
 
   for (;;) {
     CComQIPtr<IWebBrowser2, &IID_IWebBrowser2> webBrowser2(dispatch);
-    BreakOnNullWithDebugLog(webBrowser2, L"BrowserHelperObject::OnAttachForgeExtensions failed to obtain IWebBrowser2");
+    BreakOnNullWithErrorLog(webBrowser2, L"BrowserHelperObject::OnAttachForgeExtensions failed to obtain IWebBrowser2");
 
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions -> " + boost::lexical_cast<wstring>(dispatch) +  L" -> " + location + L" -> " + eventsource);
     // get interfaces
     hr = webBrowser2->get_Document(&disp);
+    BreakOnNullWithErrorLog(disp, L"BrowserHelperObject::OnAttachForgeExtensions get_Document failed");
     BreakOnFailed(hr);
-    BreakOnNullWithDebugLog(disp, L"BrowserHelperObject::OnAttachForgeExtensions get_Document failed");
     
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions IDispatch -> " + boost::lexical_cast<wstring>(disp));
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-    BreakOnNullWithDebugLog(htmlDocument2, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLDocument2 failed");
+    BreakOnNullWithErrorLog(htmlDocument2, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLDocument2 failed");
 
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions IHTMLDocument2 -> " + boost::lexical_cast<wstring>(htmlDocument2));
 
     hr = htmlDocument2->get_parentWindow(&htmlWindow2);
+    BreakOnNullWithErrorLog(htmlWindow2, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLWindow2 failed");
     BreakOnFailed(hr);
-    BreakOnNullWithDebugLog(htmlWindow2, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLWindow2 failed");
     
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions IHTMLWindow2 -> " + boost::lexical_cast<wstring>(htmlWindow2));
 
     CComQIPtr<IDispatchEx> htmlWindow2Ex(htmlWindow2);
-    BreakOnNullWithDebugLog(htmlWindow2Ex, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLWindow2Ex failed");
+    BreakOnNullWithErrorLog(htmlWindow2Ex, L"BrowserHelperObject::OnAttachForgeExtensions IHTMLWindow2Ex failed");
 
     // Attach NativeAccessible (forge.tabs.*)
     if (m_nativeAccessible) {
@@ -529,25 +524,17 @@ void __stdcall CBrowserHelperObject::OnAttachForgeExtensions(IDispatch *dispatch
 
     m_nativeAccessible = NativeAccessible::pointer(new NativeAccessible(webBrowser2));
     hr = Attach::NativeTabs(htmlWindow2Ex, L"accessible", m_nativeAccessible.get());
-    if (FAILED(hr)) {
-      logger->error(L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeExtensions -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeExtensions -> " + logger->parse(hr));
 
     // Attach NativeExtensions
     hr = Attach::NativeExtensions(manifest->uuid, htmlWindow2Ex, L"extensions", m_instanceId, location, &m_nativeExtensions.p);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeExtensions -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeExtensions -> " + logger->parse(hr));
+    
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions attached NativeExtensions");
 
     // Attach NativeMessaging
     hr = Attach::NativeMessaging(manifest->uuid, htmlWindow2Ex, L"messaging", m_instanceId, &m_nativeMessaging.p);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeMessaging -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserHelperObject::OnAttachForgeExtensions failed to attach NativeMessaging -> " + logger->parse(hr));
 
     /// finally
     logger->debug(L"BrowserHelperObject::OnAttachForgeExtensions attached NativeMessaging");
@@ -561,35 +548,45 @@ void __stdcall CBrowserHelperObject::OnAttachForgeExtensions(IDispatch *dispatch
  */
 void __stdcall CBrowserHelperObject::OnWindowStateChanged(DWORD flags, DWORD mask)
 {
-  CComBSTR url;
-  m_webBrowser2->get_LocationURL(&url);
-  CComBSTR title;
-  m_webBrowser2->get_LocationName(&title);
+  CComBSTR url = nullptr; 
+  CComBSTR title = nullptr;
 
-  bool focused = false;
-  switch (flags) {
-  case OLECMDIDF_WINDOWSTATE_USERVISIBLE:   break;
-  case OLECMDIDF_WINDOWSTATE_ENABLED:       break;
-  case 3:   // MSDN docs are _WRONG_
-    focused = true;
-    break;
-  }
+  HRESULT hr = S_OK;
 
-  m_tabInfo.id = m_instanceId;
-  m_tabInfo.active = focused;
-  m_tabInfo.url = url;
-  m_tabInfo.title = title;
+  for (;;) {
+    hr = m_webBrowser2->get_LocationURL(&url);
+    BreakOnFailed(hr);
 
-  // update tab info
-  if (m_nativeMessaging) {
-    HRESULT hr = m_nativeMessaging->tabs_set(CComBSTR(_AtlModule.moduleManifest->uuid.c_str()), m_tabInfo.id, CComBSTR(m_tabInfo.url.c_str()), CComBSTR(m_tabInfo.title.c_str()), m_tabInfo.active);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserHelperObject::OnWindowStateChanged tabs_Set failed -> " + boost::lexical_cast<wstring>(m_tabInfo.id) +
-        L" -> " + m_tabInfo.url +
-        L" -> " + m_tabInfo.title +
-        L" -> " + boost::lexical_cast<wstring>(m_tabInfo.active) +
-        L" -> " + logger->parse(hr));
+    hr = m_webBrowser2->get_LocationName(&title);
+    BreakOnFailed(hr);
+
+    bool focused = false;
+    switch (flags) {
+    case OLECMDIDF_WINDOWSTATE_USERVISIBLE:   break;
+    case OLECMDIDF_WINDOWSTATE_ENABLED:       break;
+    case 3:   // MSDN docs are _WRONG_
+      focused = true;
+      break;
     }
+
+    m_tabInfo.id = m_instanceId;
+    m_tabInfo.active = focused;
+    m_tabInfo.url = url;
+    m_tabInfo.title = title;
+
+    // update tab info
+    if (m_nativeMessaging) {
+      hr = m_nativeMessaging->tabs_set(CComBSTR(_AtlModule.moduleManifest->uuid.c_str()), m_tabInfo.id, CComBSTR(m_tabInfo.url.c_str()), CComBSTR(m_tabInfo.title.c_str()), m_tabInfo.active);
+      if (FAILED(hr)) {
+        logger->error(L"BrowserHelperObject::OnWindowStateChanged tabs_Set failed -> " + boost::lexical_cast<wstring>(m_tabInfo.id) +
+          L" -> " + m_tabInfo.url +
+          L" -> " + m_tabInfo.title +
+          L" -> " + boost::lexical_cast<wstring>(m_tabInfo.active) +
+          L" -> " + logger->parse(hr));
+      }
+    }
+
+    break;
   }
 }
 
@@ -682,19 +679,19 @@ void CBrowserHelperObject::OnRefresh()
 
      // get IHTMLWindow2
      hr = webBrowser2->get_Document(&disp);
+     BreakOnNullWithErrorLog(disp, L"BrowserHelperObject::OnRefresh get_Document failed");
      BreakOnFailed(hr);
-     BreakOnNullWithDebugLog(disp, L"BrowserHelperObject::OnRefresh get_Document failed");
 
      CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
-     BreakOnNullWithDebugLog(htmlDocument2, L"BrowserHelperObject::OnRefresh IHTMLDocument2 failed");
+     BreakOnNullWithErrorLog(htmlDocument2, L"BrowserHelperObject::OnRefresh IHTMLDocument2 failed");
 
      hr = htmlDocument2->get_parentWindow(&htmlWindow2);
+     BreakOnNullWithErrorLog(htmlWindow2, L"BrowserHelperObject::OnRefresh IHTMLWindow2 failed");
      BreakOnFailed(hr);
-     BreakOnNullWithDebugLog(htmlWindow2, L"BrowserHelperObject::OnRefresh IHTMLWindow2 failed");
 
      // attach forge extensions when pages like target=_blank didn't trigger navComplete event
-     //if (!m_isAttached)
-     OnAttachForgeExtensions(m_webBrowser2, location, L"OnRefresh"); // was L"OnDocumentComplete"
+     if (!m_isAttached)
+       OnAttachForgeExtensions(m_webBrowser2, location, L"OnRefresh"); // was L"OnDocumentComplete"
 
      // Inject styles
      HTMLDocument document(webBrowser2);
