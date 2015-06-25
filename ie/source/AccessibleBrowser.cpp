@@ -45,12 +45,12 @@ Accessible::vector Accessible::children()
     BreakOnNullWithErrorLog(iaccessible, L"Accessible::children invalid IAccessible");
 
     hr = iaccessible->get_accChildCount(&count);
-    BreakOnFailedWithDebugLog(hr, L"Accessible::children failed to get child count -> " + logger->parse(hr));
+    BreakOnFailedWithErrorLog(hr, L"Accessible::children failed to get child count -> " + logger->parse(hr));
 
     // get accessors
     accessors.resize(count);
     hr = ::AccessibleChildren(iaccessible, 0, count, &accessors[0], &countObtained);
-    BreakOnFailedWithDebugLog(hr, L"Accessible::children failed to get accessors -> " + logger->parse(hr));
+    BreakOnFailedWithErrorLog(hr, L"Accessible::children failed to get accessors -> " + logger->parse(hr));
 
     // iterate through accessors
     for (long n = 0; n < countObtained; ++n) {
@@ -103,7 +103,7 @@ wstringvector AccessibleBrowser::tabs()
     if (m_hwnd == NULL) {
       logger->debug(L"AccessibleBrowser::tabs calling EnumWindows for IE hwnd");
       ::EnumWindows(AccessibleBrowser::EnumWndProc, (LPARAM)&m_hwnd);
-      BreakOnNullWithDebugLog(m_hwnd, L"AccessibleBrowser::tabs could not get active tab");
+      BreakOnNullWithErrorLog(m_hwnd, L"AccessibleBrowser::tabs could not get active tab");
     }
 
     logger->debug(L"AccessibleBrowser::tabs active tab -> " + boost::lexical_cast<wstring>(m_hwnd));
@@ -124,8 +124,8 @@ wstringvector AccessibleBrowser::tabs()
     
     // get IAccessible for IE
     hr = ::AccessibleObjectFromWindow(hwnd, OBJID_WINDOW, IID_IAccessible, (void**)&iaccessible);
-    BreakOnFailed(hr);
     BreakOnNull(iaccessible, hr);
+    BreakOnFailed(hr);
     
     // iterate through accessors
     auto& accessors = Accessible(iaccessible).children();
