@@ -11,7 +11,8 @@ extern Logger::pointer logger;
 
 /** Useful namespaces */
 namespace bfs = boost::filesystem;
-using boost::shared_ptr;
+//using boost::shared_ptr;
+using std::shared_ptr;
 
 
 /** Useful definitions */
@@ -126,10 +127,8 @@ static HRESULT GET_MSIE_VERSION(int *major, int *minor)
 }
 
 #define BreakOnFailed(res) if (FAILED((res))) { break; }
-#define BreakOnFailedWithDebugLog(res, message) if (FAILED((res))) { logger->debug((message)); break; }
 #define BreakOnFailedWithErrorLog(res, message) if (FAILED((res))) { logger->debug((message)); break; }
 
 #define BreakOnNull(ptr, res) if (!(ptr)) { (res) = E_POINTER; break; }
-#define BreakOnNullWithDebugLog(ptr, message) if(!(ptr)) { logger->debug((message)); break; }
 #define BreakOnNullWithErrorLog(ptr, message) if(!(ptr)) { logger->error((message)); break; }
 
