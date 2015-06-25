@@ -301,14 +301,14 @@ var apiImpl = {
          * @param {Function} error Receives an object with message and otherwise undefined schema.
          */
         get: function(params, success, error) {
-          loggerpriv('Get prefs');
+            console.log('Get prefs', params);
 
             window.extensions.prefs_get(forge.config.uuid, params.key,
                                         function(value) {
                                             try {
                                                 value = JSON.parse(value);
                                             } catch (e) {
-                                                loggerpriv("prefs.get" +
+                                                console.log("prefs.get" +
                                                            " -> " + value + " is not JSON parseable");
                                                 return success(null);
                                             }

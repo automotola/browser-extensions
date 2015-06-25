@@ -49,13 +49,10 @@ def sensible_default_for_toolbar():
 	]
 
 def pre_create_all_js():
-	current_jQuery = 'common-v2/jquery-1.5.2.js'
 	return [
 		{'when': {'platform_is': 'ie'}, 'do': {'add_to_all_js': 'common-v2/json2.js'}},
-		{'when': {'platform_is': 'chrome,safari'}, 'do': {'add_to_all_js': current_jQuery}},
 		{'do': {'add_to_all_js': 'common-v2/api-prefix.js'}},
 		{'do': {'add_to_all_js': 'common-v2/config.js'}},
-		{'when': {'platform_is': 'chrome,safari'}, 'do': {'add_to_all_js': 'common-v2/api-jquery.js'}},
 		{'do': {'add_to_all_js': 'common-v2/api.js'}},
 	]
 

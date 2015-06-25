@@ -52,7 +52,7 @@ def preprocess_config(build):
 	if 'uuid' not in build.config:
 		build.config['uuid'] = str(uuid.uuid4())
 		build.log.warning('generated new UUID: %s' % build.config['uuid'])
-		
+
 	if build.test:
 		ant = subprocess.Popen(['hg', 'id', '-i', build.source_dir], stdout=PIPE, stderr=STDOUT)
 		cshash = ant.communicate()[0].replace('+','').strip()
@@ -83,8 +83,8 @@ def preprocess_config(build):
 		build.config["logging_level"] = "INFO"
 
 	build.config['json'] = json
-	
-	
+
+
 @task
 def need_https_access(build):
 	'If any activation has a HTTPS prefix, set the "activate_on_https" config flag'
@@ -96,14 +96,14 @@ def need_https_access(build):
 		)
 	def activation_needs_https(act):
 		return any(pattern_needs_https(pat) for pat in act.get("patterns", []))
-	
+
 	build.config["activate_on_https"] = any(
 		pattern_needs_https(pat) for pat in build.config["plugins"]
 			.get("request", {})
 			.get("config", {})
 			.get("permissions", [])
 	) or any(
-		activation_needs_https(act) for act in build.config["plugins"] 
+		activation_needs_https(act) for act in build.config["plugins"]
 			.get("activations", {}).get("config", {}).get("activations", [])
 	)
 
@@ -140,7 +140,7 @@ def concatenate_files(build, **kw):
 			with open(frm) as in_file:
 				out_file.write(in_file.read())
 			build.log.info('appended %s to %s' % (frm, kw['out'],))
-	
+
 @task
 def add_to_all_js(build, file):
 	all_js_paths = {
@@ -177,7 +177,7 @@ def fallback_to_default_toolbar_icon(build):
 	# no default icon given in browser_action section
 	build.log.debug("moving default toolbar icon into place")
 	shutil.copytree("common-v2/graphics", "common-v2/forge/graphics")
-	
+
 	build.log.debug("settings browser_action.default_icon")
 	build.config["plugins"]["button"]["config"]["default_icon"] = "forge/graphics/icon16.png"
 
@@ -279,7 +279,7 @@ def cfx_build(build, source_dir):
 		except (KeyError, TypeError):
 			# no FF update URL defined
 			pass
-		
+
 		build.log.debug('running cfx command: "%s"' % (cmd))
 		cfx = subprocess.Popen(cmd, stdout=PIPE, stderr=STDOUT)
 		out = cfx.communicate()[0]
@@ -290,22 +290,6 @@ def cfx_build(build, source_dir):
 			build.log.debug('cfx output: %s' % out)
 	finally:
 		os.chdir(original_dir)
-
-@task
-def copy_jquery(build, **kw):
-	if 'to' not in kw:
-		raise ConfigurationError('copy_jquery needs "to" keyword arguments')
-
-	_from = 'common-v2/libs/jquery/jquery-' + build.config.get('plugins')['jquery']['config']['version'] + '.min.js'
-	_to = utils.render_string(build.config, kw['to'])
-
-	dir = ''
-	for next_dir in _to.split('/'):
-		dir += next_dir + '/'
-		if not os.path.isdir(dir):
-			os.mkdir(dir)
-
-	shutil.copy(_from, _to)
 
 def _download_and_extract_plugin(build, name, hash):
 	if os.path.exists(os.path.join('plugins', name)):
@@ -324,7 +308,7 @@ def _download_and_extract_plugin(build, name, hash):
 			count = count + 1
 			if count == 5:
 				raise e
-	
+
 	zipf = zipfile.ZipFile('plugins/'+hash)
 	zipf.extractall(os.path.join('plugins', name))
 	zipf.close()
