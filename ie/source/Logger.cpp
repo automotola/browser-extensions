@@ -59,30 +59,46 @@ void Logger::initialize(const boost::filesystem::wpath& path)
  */
 void Logger::write(const std::wstring& message, Logger::Level level)
 {
-    if (!enabled) {
-        return;
+  if (!enabled)
+    return;
+
+  if (level <= m_level) {
+
+//#ifdef DEBUGGER
+    switch (level) {
+    case CRITICAL:
+      ::OutputDebugString(L"[CRITICAL] ");
+      break;
+    case ERR:
+      ::OutputDebugString(L"[ERROR] ");
+      break;
+    case WARN:
+      ::OutputDebugString(L"[WARN] ");
+      break;
+    case INFO:
+      ::OutputDebugString(L"[INFO] ");
+      break;
+    case DBG:
+      ::OutputDebugString(L"[DEBUG] ");
+      break;
+    default:
+      break;
     }
 
-    if (level <= m_level) {
+    ::OutputDebugString(message.c_str());
+    ::OutputDebugString(L"\n");
+//#endif // DEBUGGER
 
-#ifdef DEBUGGER
-        if (level == Logger::ERR) {
-            ::OutputDebugString(L"ERROR ");  
-        }
-        ::OutputDebugString(message.c_str());  
-        ::OutputDebugString(L"\n");
-#endif /* DEBUGGER */
-
-        if (!m_filename.empty()) {
-            std::wofstream fs;
-            fs.open(m_filename, std::ios::out | std::ios::app);
-            if (level == Logger::ERR) {
-                fs << L"[ERROR] ";
-            }
-            fs << message << std::endl << std::flush;
-            fs.close();
-        }
+    if (!m_filename.empty()) {
+      std::wofstream fs;
+      fs.open(m_filename, std::ios::out | std::ios::app);
+      if (level == Logger::ERR) {
+        fs << L"[ERROR] ";
+      }
+      fs << message << std::endl << std::flush;
+      fs.close();
     }
+  }
 }
 
 
