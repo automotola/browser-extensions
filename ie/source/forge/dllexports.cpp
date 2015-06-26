@@ -24,6 +24,7 @@ STDAPI DllCanUnloadNow(void)
  */
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
+#if 0
   LPOLESTR tmp = nullptr;
   ::StringFromCLSID(rclsid, &tmp);
   wstring requested_clsid;
@@ -31,6 +32,7 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
     requested_clsid = wstring(tmp);
     ::CoTaskMemFree(tmp);
   }
+#endif
 
   return _AtlModule.DllGetClassObject(rclsid, riid, ppv);
 }

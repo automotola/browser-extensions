@@ -51,8 +51,8 @@ BrowserControl::~BrowserControl()
   // BrowserControl
   if (!DestroyWindow())
     logger->warn(L"BrowserControl::~BrowserControl failed to destroy window");
-  
-  m_hWnd = NULL;
+
+  m_hWnd = nullptr;
   logger->debug(L"BrowserControl::~BrowserControl done");
 }
 
@@ -109,15 +109,15 @@ void __stdcall BrowserControl::OnNavigateComplete2(IDispatch *idispatch, VARIANT
     BreakOnNullWithErrorLog(webBrowser2, L"BrowserControl::OnNavigateComplete2 no valid IWebBrowser2");
 
     hr = webBrowser2->get_Document(&disp);
-    BreakOnFailed(hr);
     BreakOnNullWithErrorLog(disp, L"BrowserControl::OnNavigateComplete2 get_Document failed");
+    BreakOnFailed(hr);
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
     BreakOnNullWithErrorLog(htmlDocument2, L"BrowserControl::OnNavigateComplete2 IHTMLDocument2 failed");
 
     hr = htmlDocument2->get_parentWindow(&htmlWindow2);
-    BreakOnFailed(hr);
     BreakOnNullWithErrorLog(htmlWindow2, L"BrowserControl::OnNavigateComplete2 IHTMLWindow2 failed");
+    BreakOnFailed(hr);
 
     CComQIPtr<IDispatchEx> htmlWindow2Ex(htmlWindow2);
     BreakOnNullWithErrorLog(htmlWindow2Ex, L"BrowserControl::OnNavigateComplete2 IHTMLWindow2Ex failed");

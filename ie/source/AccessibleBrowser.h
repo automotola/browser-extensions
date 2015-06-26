@@ -66,8 +66,7 @@ private:
 class NativeAccessible
 {
 public:
-  virtual void __stdcall open(BSTR url, VARIANT_BOOL selected,
-    IDispatch *success, IDispatch *error);
+  virtual void __stdcall open(BSTR url, VARIANT_BOOL selected, IDispatch *success, IDispatch *error);
   virtual void __stdcall closeCurrent(IDispatch *error);
 
   // lifecycle

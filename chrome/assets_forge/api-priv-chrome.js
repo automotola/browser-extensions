@@ -223,19 +223,46 @@ var apiImpl = {
 		 * success and error callbacks are taken from positional arguments,
 		 * not from the options.success and options.error values.
 		 */
-		ajax: function (params, success, error) {
-      var xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-          if (xhr.status == 200)
-            success(xhr.responseText, xhr.statusText, xhr);
-          else
-            error({message: xhr.statusText});
+    ajax: function (params, success, error) {
+      var http = new XMLHttpRequest()
+      var headers = params.headers
+      var data = params.data
+
+      http.open(params.type, params.url, true)
+
+      if (data) {
+        if (!headers || !headers['Content-Type']) {
+          http.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
         }
-      };
-      xhr.open(params.method, params.url, true);
-      xhr.send();
-		}
+
+        if (typeof data != 'string') {
+          try {
+            data = JSON.stringify(params.data)
+          }
+          catch (e) {
+            data = null
+            console.log(e)
+          }
+        }
+      }
+
+      if (headers) {
+        Object.keys(headers).forEach(function(key) {
+          http.setRequestHeader(key, headers[key])
+        })
+      }
+
+      http.onreadystatechange = function() {
+        if (http.readyState == 4) {
+          if (http.status == 200 || http.status == 201)
+            success(http.responseText, http.statusText, http)
+          else
+            error({message: http.statusText})
+        }
+      }
+
+      http.send(data)
+    }
 	},
 	tabs: {
     allTabs: function(params, success) {

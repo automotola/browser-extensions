@@ -11,12 +11,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
 {
     BOOL result = FALSE;
 
-    /*#ifdef DEBUG
-    logger->output(L"z:\\forge_com.log");
-#else
-    logger->output(L"forge_com.log");
-#endif*/ /* DEBUG */
-
     ::DisableThreadLibraryCalls(instance);
 
 #ifdef _MERGE_PROXYSTUB
