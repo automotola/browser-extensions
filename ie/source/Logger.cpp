@@ -102,11 +102,52 @@ void Logger::write(const std::wstring& message, Logger::Level level)
 }
 
 
+DWORD DoFormatMessageW(DWORD dwFlags, DWORD dwMessageId, WCHAR* pBuffer, DWORD nSize, HMODULE lpSource)
+{
+  if (lpSource)
+    dwFlags |= FORMAT_MESSAGE_FROM_HMODULE;
+  DWORD nRes = FormatMessageW(dwFlags, (LPCVOID)lpSource, dwMessageId, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+    pBuffer, nSize, nullptr);
+  return nRes;
+}
+
+LONG FillErrorInfo(HRESULT hres, WCHAR* buf, LONG maxlen)
+{
+  DWORD pos = 0;
+  LONG len = 0;
+  if (maxlen == 0)
+    buf = nullptr;
+
+  const DWORD nFlags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+  DWORD ecode = (DWORD)hres;
+  
+  for (;;) {
+    if (buf != nullptr)
+      len = DoFormatMessageW(nFlags, ecode, buf, maxlen, nullptr);
+    else {
+      LPVOID lpMsgBuf = nullptr;
+      len = DoFormatMessageW(nFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER, ecode, (WCHAR*)&lpMsgBuf, 0, nullptr);
+      if (lpMsgBuf)
+        LocalFree(lpMsgBuf);
+    }
+
+    if (len > 0)
+      break;
+  }
+
+  if (len > 0)
+    ++len;
+
+  return len;
+}
+
+
 /**
  * Logger::parse(HRESULT)
  */
-std::wstring Logger::parse(HRESULT hr) 
+std::wstring Logger::parse(HRESULT hr)
 {
+#if 0
     HRESULT result;
 
     wchar_t* buf = nullptr;
@@ -124,6 +165,18 @@ std::wstring Logger::parse(HRESULT hr)
     hrhex << L"0x" << std::hex << hr;
     
     return hrhex.str() + L" -> " + hrstr;
+#endif
+
+    wstring result;
+    LONG len = FillErrorInfo(hr, 0, 0);
+    
+    if (len > 0) {
+      std::vector<WCHAR> buf(len, 0);
+      FillErrorInfo(hr, &buf[0], len);
+      result = wstring((WCHAR*)&buf[0]);
+    }
+
+    return result;
 }
 
 

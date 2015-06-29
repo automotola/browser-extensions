@@ -74,7 +74,7 @@ private:
   Level m_level;
 
 public:
-  typedef boost::shared_ptr<Logger> pointer;
+  typedef std::shared_ptr<Logger> pointer;
 
   // helpers
   std::wstring stringify(TYPEDESC *typeDesc, ITypeInfo *pTypeInfo);
@@ -93,3 +93,4 @@ protected:
     return s.substr(0, maxlen / 2) + L" ... <schnip /> ... " + s.substr(len - maxlen / 2);
   }
 };
+
