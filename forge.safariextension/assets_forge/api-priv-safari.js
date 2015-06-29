@@ -270,6 +270,14 @@ var apiImpl = {
 				}
 			}
 		},
+    allTabs: function(params, success) {
+      var tabs = [];
+      var windows = safari.application.browserWindows;
+      for (var i = 0, wLength = windows.length; i < wLength; i++) {
+        tabs = tabs.concat(windows[i].tabs);
+      }
+      success(tabs)
+    },
     open: function (params, success, error) {
       var currentTab = safari.application.activeBrowserWindow.activeTab;
       var tab = safari.application.activeBrowserWindow.openTab();
