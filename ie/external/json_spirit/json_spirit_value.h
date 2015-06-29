@@ -74,8 +74,8 @@ namespace json_spirit
 
         Value_type type_;
 
-        typedef boost::shared_ptr< Object > Object_ptr;
-        typedef boost::shared_ptr< Array > Array_ptr;
+        typedef std::shared_ptr< Object > Object_ptr;
+        typedef std::shared_ptr< Array > Array_ptr;
 
         String str_;
         Object_ptr obj_p_;
