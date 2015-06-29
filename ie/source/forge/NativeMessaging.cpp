@@ -93,6 +93,9 @@ STDMETHODIMP CNativeMessaging::tabs_active(BSTR uuid, IDispatch *callback, UINT 
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"CNativeMessaging::tabs_active failed -> " + logger->parse(hr));
+
   return hr;
 }
 

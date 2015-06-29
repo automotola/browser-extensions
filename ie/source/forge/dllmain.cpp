@@ -21,7 +21,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     // save module instance handle
     _AtlModule.moduleHandle = instance;
 
-
     // save module path
     wchar_t buf[MAX_PATH] = {0};
     ::GetModuleFileName(instance, buf, MAX_PATH);
@@ -53,8 +52,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
     
     // attach
     try {
-        logger->debug(L"Forge::DllMain(DLL_PROCESS_ATTACH) caller: " +
-                      _AtlModule.callerPath.wstring());
+        logger->debug(L"Forge::DllMain(DLL_PROCESS_ATTACH) caller: " + _AtlModule.callerPath.wstring());
 
         // initialize module manifest
         _AtlModule.moduleCLSID = VENDOR_UUID_STR(VENDOR_UUID_ForgeLibAppId);
@@ -71,8 +69,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved
         logger->debug(L"   clsid:  " + _AtlModule.moduleCLSID);
 
         result = _AtlModule.DllMain(reason, reserved); 
-        logger->debug(L"Forge::DllMain _AtlModule.DllMain -> " + 
-                      boost::lexical_cast<wstring>(result));
+        logger->debug(L"Forge::DllMain _AtlModule.DllMain -> " + boost::lexical_cast<wstring>(result));
         
     } catch (...) {
         result = FALSE;

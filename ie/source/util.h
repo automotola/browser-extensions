@@ -68,7 +68,7 @@ static wstring wstring_limit(const wstring& s, size_t maxlen = 160)
 
 static bool wstring_match_wild(const wstring& wildcard, const wstring& s)
 {
-  wstring rex = wildcard;
+  wstring rex(wildcard);
   boost::replace_all(rex, L"\\", L"\\\\");
   boost::replace_all(rex, L"^", L"\\^");
   boost::replace_all(rex, L".", L"\\.");

@@ -248,18 +248,12 @@ HRESULT button_onClickCommand::exec()
     }
 
     hr = nativeControls->button_click(CComBSTR(uuid), point);
-    if (FAILED(hr)) {
-      logger->error(L"button_onClickCommand::exec failed to invoke NativeControls::button_click -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"button_onClickCommand::exec failed to invoke NativeControls::button_click -> " + logger->parse(hr));
 
     // Force popup to the foreground for IE9
     int major, minor;
     hr = GET_MSIE_VERSION(&major, &minor);
-    if (FAILED(hr)) {
-      logger->error(L"button_onClickCommand::exec failed to get browser version");
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"button_onClickCommand::exec() failed to get browser version");
 
     if (major >= 8) {
       BOOL visible = FALSE;

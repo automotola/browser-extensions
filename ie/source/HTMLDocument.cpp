@@ -64,6 +64,9 @@ HRESULT HTMLDocument::OnConnect()
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::OnConnect() failed -> " + logger->parse(hr));
+
   return hr;
 }
 
@@ -174,6 +177,9 @@ HRESULT HTMLDocument::InjectScript(const wstringpointer& content)
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::InjectScript failed -> " + logger->parse(hr));
+
   return hr;
 }
 
@@ -220,6 +226,9 @@ HRESULT HTMLDocument::InjectScriptTag(const wstring& type, const wstring& src)
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::InjectScriptTag failed -> " + logger->parse(hr));
+
   return hr;
 }
 
@@ -245,6 +254,9 @@ HRESULT HTMLDocument::InjectStyle(const wstringpointer& content)
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::InjectStyle failed -> " + logger->parse(hr));
+
   return hr;
 }
 
@@ -268,6 +280,10 @@ HRESULT HTMLDocument::InjectBody(const wstringpointer& content, BSTR where)
     hr = body->insertAdjacentHTML(where, CComBSTR(content->c_str()));
     break;
   }
+
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::InjectBody failed -> " + logger->parse(hr));
+
   return hr;
 }
 
@@ -293,6 +309,9 @@ HRESULT HTMLDocument::InjectElementById(const wstring& id, const wstringpointer&
     hr = element->insertAdjacentHTML(where, CComBSTR(content->c_str()));
     break;
   }
+
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::InjectElementById failed -> " + logger->parse(hr));
   
   return hr;
 }
@@ -315,6 +334,9 @@ HRESULT HTMLDocument::ClickElementById(const wstring& id)
     hr = element->click();
     break;
   }
+
+  if (FAILED(hr))
+    logger->error(L"HTMLDocument::ClickElementById failed -> " + logger->parse(hr));
   
   return hr;
 }

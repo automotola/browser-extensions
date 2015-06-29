@@ -24,16 +24,6 @@ STDAPI DllCanUnloadNow(void)
  */
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-#if 0
-  LPOLESTR tmp = nullptr;
-  ::StringFromCLSID(rclsid, &tmp);
-  wstring requested_clsid;
-  if (tmp) {
-    requested_clsid = wstring(tmp);
-    ::CoTaskMemFree(tmp);
-  }
-#endif
-
   return _AtlModule.DllGetClassObject(rclsid, riid, ppv);
 }
 
@@ -63,19 +53,25 @@ STDAPI DllInstall(BOOL bInstall, LPCWSTR pszCmdLine)
 {
   logger->debug(L"Forge::dllexports::DllInstall");
 
-  HRESULT hr = E_FAIL;
+  HRESULT hr = S_OK;
   static const wchar_t szUserSwitch[] = L"user";
 
-  if (pszCmdLine)
-    if (_wcsnicmp(pszCmdLine, szUserSwitch, _countof(szUserSwitch)) == 0)
-      ATL::AtlSetPerUserRegistration(true);
+  for (;;) {
+    if (pszCmdLine)
+      if (_wcsnicmp(pszCmdLine, szUserSwitch, _countof(szUserSwitch)) == 0)
+        hr = ATL::AtlSetPerUserRegistration(true);
+    BreakOnFailed(hr);
 
-  if (bInstall) {
-    hr = DllRegisterServer();
-    if (FAILED(hr))
-      DllUnregisterServer();
-  } else
-    hr = DllUnregisterServer();
+    if (bInstall) {
+      hr = DllRegisterServer();
+      if (FAILED(hr))
+        hr = DllUnregisterServer();
+    }
+    else
+      hr = DllUnregisterServer();
+
+    break;
+  }  
 
   return hr;
 }

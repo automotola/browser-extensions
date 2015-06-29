@@ -97,10 +97,7 @@ STDMETHODIMP CBrowserHelperObject::SetSite(IUnknown *unknown)
   HRESULT hr = S_OK;
   for (;;) {
     hr = unknown ? OnConnect(unknown) : OnDisconnect(unknown);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserHelperObject::SetSite failed -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserHelperObject::SetSite failed -> " + logger->parse(hr));
 
     hr = IObjectWithSiteImpl<CBrowserHelperObject>::SetSite(unknown);
     break;
@@ -129,10 +126,7 @@ HRESULT CBrowserHelperObject::OnConnect(IUnknown *unknown)
     // browsers and interfaces and sinks oh my
     CComQIPtr<IServiceProvider> sp(unknown);
     hr = sp->QueryService(IID_IWebBrowserApp, IID_IWebBrowser2, (void**)&m_webBrowser2);
-    if (FAILED(hr)) {
-      logger->debug(L"CBrowserHelperObject::OnConnect failed to get IWebBrowser2 -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"CBrowserHelperObject::OnConnect failed to get IWebBrowser2 -> " + logger->parse(hr));
 
     hr = DispEventAdvise(m_webBrowser2);
     if (FAILED(hr))
@@ -413,15 +407,15 @@ void __stdcall CBrowserHelperObject::OnDocumentComplete(IDispatch *dispatch, VAR
 
     // get IHTMLWindow2
     hr = webBrowser2->get_Document(&disp);
-    BreakOnFailed(hr);
     BreakOnNullWithErrorLog(disp, L"BrowserHelperObject::OnDocumentComplete get_Document failed");
+    BreakOnFailed(hr);
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
     BreakOnNullWithErrorLog(htmlDocument2, L"BrowserHelperObject::OnDocumentComplete IHTMLDocument2 failed");
     
     hr = htmlDocument2->get_parentWindow(&htmlWindow2);
-    BreakOnFailed(hr);
     BreakOnNullWithErrorLog(htmlWindow2, L"BrowserHelperObject::OnDocumentComplete IHTMLWindow2 failed");
+    BreakOnFailed(hr);
 
     // attach forge extensions when pages like target=_blank didn't trigger navComplete event
     if (!m_isAttached)

@@ -150,6 +150,9 @@ wstringvector AccessibleBrowser::tabs()
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L" AccessibleBrowser::tabs() failed -> " + logger->parse(hr));
+
   return ret;
 }
 

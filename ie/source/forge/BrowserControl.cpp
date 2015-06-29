@@ -174,8 +174,8 @@ void __stdcall BrowserControl::OnDocumentComplete(IDispatch *idispatch, VARIANT 
     BreakOnNullWithErrorLog(webBrowser2, L"BrowserControl::OnDocumentComplete no valid IWebBrowser2");
 
     hr = webBrowser2->get_Document(&disp);
-    BreakOnFailed(hr);
     BreakOnNullWithErrorLog(disp, L"BrowserControl::OnDocumentComplete get_Document failed");
+    BreakOnFailed(hr);
 
     CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2> htmlDocument2(disp);
     BreakOnNullWithErrorLog(htmlDocument2, L"BrowserControl::OnDocumentComplete IHTMLDocument2 failed");
@@ -245,6 +245,9 @@ void __stdcall BrowserControl::OnDocumentComplete(IDispatch *idispatch, VARIANT 
     parent->MoveWindow(origin, buttonPosition.y, width, height, TRUE);
     break;
   }
+
+  if (FAILED(hr))
+    logger->error(L"BrowserControl::OnDocumentComplete" + logger->parse(hr));
 }
 
 
@@ -308,6 +311,9 @@ HRESULT BrowserControl::SetContent(const wstringpointer& content)
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"BrowserControl::SetContent failed -> " + logger->parse(hr));
+
   // clean up behind ourselves
   if (_content)
     ::SysFreeString(_content);
@@ -325,21 +331,15 @@ HRESULT BrowserControl::SetContent(const wstringpointer& content)
 HRESULT BrowserControl::AttachControl(BOOL events) 
 {
   CComPtr<IUnknown> unknown = nullptr;
-  HRESULT hr = E_FAIL;
+  HRESULT hr = S_OK;
   for (;;) {
     BreakOnNullWithErrorLog(m_hWnd, L"BrowserControl::AttachControl no parent");
 
     hr = ::AtlAxGetControl(m_hWnd, &unknown);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserControl::AttachControl AtlAxGetControl failed -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserControl::AttachControl AtlAxGetControl failed -> " + logger->parse(hr));
 
     hr = unknown->QueryInterface(__uuidof(IWebBrowser2), (void**)(CComPtr<IWebBrowser2>*)this);
-    if (FAILED(hr)) {
-      logger->error(L"BrowserControl::AttachControl QueryInterface failed -> " + logger->parse(hr));
-      break;
-    }
+    BreakOnFailedWithErrorLog(hr, L"BrowserControl::AttachControl QueryInterface failed -> " + logger->parse(hr));
 
     if (!events) {
       hr = S_OK;
@@ -356,24 +356,25 @@ HRESULT BrowserControl::AttachControl(BOOL events)
   return hr;
 }
 
-
 /**
  * Helper: EasyAdvise
  */
 HRESULT BrowserControl::EasyAdvise(IUnknown* unknown) 
 {
   m_unknown = unknown;
-  ::AtlGetObjectSourceInterface(unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
+  HRESULT hr = ::AtlGetObjectSourceInterface(unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
+  if (FAILED(hr))
+    logger->error(L"BrowserControl::EasyAdvise failed -> " + logger->parse(hr));
   return DispEventAdvise(unknown, &m_iid);
 }
-
 
 /**
  * Helper: EasyUnadvice
  */
 HRESULT BrowserControl::EasyUnadvise() 
 {
-  logger->debug(L"BrowserControl::EasyUnadvise");
-  ::AtlGetObjectSourceInterface(m_unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
+  HRESULT hr = ::AtlGetObjectSourceInterface(m_unknown, &m_libid, &m_iid, &m_wMajorVerNum, &m_wMinorVerNum);
+  if (FAILED(hr))
+    logger->error(L"BrowserControl::EasyUnadvise failed -> " + logger->parse(hr));
   return DispEventUnadvise(m_unknown, &m_iid);
 }

@@ -287,6 +287,9 @@ STDMETHODIMP CNativeExtensions::xhr(BSTR method, BSTR url, BSTR data, BSTR conte
     break;
   }
 
+  if (FAILED(hr))
+    logger->error(L"CNativeExtensions::xhr failed -> " + logger->parse(hr));
+
   return hr;
 }
 

@@ -20,14 +20,11 @@ BrowserWindow::BrowserWindow(const wstring& uuid, const wstring& url)
 LRESULT BrowserWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& handled)
 {
   HRESULT hr = S_OK;
-  HWND hwnd;
+  HWND hwnd = nullptr;
   CRect dimensions;
 
   for (;;) {
-    if (!m_hWnd) {
-      logger->debug(L"BrowserWindow::Oncreate says this does not yet exist");
-      break;
-    }
+    BreakOnNullWithErrorLog(m_hWnd, L"BrowserWindow::Oncreate says this does not yet exist");
 
     logger->debug(L"BrowserWindow::OnCreate");
     if (!GetClientRect(&dimensions)) {
@@ -36,14 +33,10 @@ LRESULT BrowserWindow::OnCreate(UINT msg, WPARAM wparam, LPARAM lparam, BOOL& ha
     }
 
     hwnd = hiddenBrowser.Create(m_hWnd, dimensions, CComBSTR(url.c_str()), WS_CHILD | WS_VISIBLE);
-    if (!hwnd) {
-      logger->debug(L"BrowserWindow::OnCreate failed to create BrowserControl");
-      break;
-    }
+    BreakOnNullWithErrorLog(hwnd, L"BrowserWindow::OnCreate failed to create BrowserControl");
 
     hr = hiddenBrowser.ShowWindow(SW_SHOW);
-    if (FAILED(hr))
-      break;
+    BreakOnFailed(hr);
 
     if(!ShowWindow(SW_HIDE)) 
       hr = E_FAIL;
