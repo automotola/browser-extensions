@@ -27,7 +27,7 @@ changeset.txt
 firefox/addon-sdk/doc/*
 local_config.json
 trigger-gen
-**/bin
+
 **/gen
 **/build
 **/.hash
