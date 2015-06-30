@@ -1,0 +1,23 @@
+{
+  "name": "browser-extensions",
+  "version": "1.0.0",
+  "description": "OpenForge\r =========",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "./install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "forge": "./run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grammarly/browser-extensions.git"
+  },
+  "author": "Grammarly",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/grammarly/browser-extensions/issues"
+  },
+  "homepage": "https://github.com/grammarly/browser-extensions#readme"
+}
