@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/grammarly/browser-extensions/issues"
   },
+  "devDependecies": {
+    "@grammarly-npm/frontend-tools": "*"
+  },
   "homepage": "https://github.com/grammarly/browser-extensions#readme"
 }
