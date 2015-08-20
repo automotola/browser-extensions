@@ -295,7 +295,7 @@ var apiImpl = {
       });
     },
     open: function (params, success, error) {
-      chrome.tabs.create({url: params.url, selected: !params.keepFocus}, success);
+      chrome.tabs.create({url: params.url, active: !params.keepFocus}, success);
     },
 		updateCurrent: function (params, success, error) {
 			chrome.tabs.update({url: params.url}, success);
