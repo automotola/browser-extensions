@@ -79,13 +79,13 @@ var port = chrome.extension.connect({name: 'bridge'})
 
 port.onMessage.addListener(onPortMessage)
 
-port.onDisconnect.addListener(function() {
+/*port.onDisconnect.addListener(function() {
   port = null
   port = proxyPort({name: 'bridge'})
   // console.log('switch to proxy')
   port.onMessage.addListener(onPortMessage)
   port.onDisconnect.addListener(checkHealth)
-})
+})*/
 
 function onPortMessage(msg) {
   internal.priv.receive(msg)
@@ -99,12 +99,12 @@ var messageListeners = {}, //{'someType': [listener1, ..]}
 
 bgPort.onMessage.addListener(onBgPortMessage)
 
-bgPort.onDisconnect.addListener(function() {
+/*bgPort.onDisconnect.addListener(function() {
   bgPort = null
   bgPort = proxyPort({name: 'message:to-priv'})
   bgPort.onMessage.addListener(onBgPortMessage)
   bgPort.onDisconnect.addListener(checkHealth)
-})
+})*/
 
 function onBgPortMessage(message) {
   //console.log('got message from bg', message)
@@ -196,11 +196,11 @@ forge.message.broadcastBackground = function(type, content, callback, error) {
  */
 var broadcastPort = chrome.extension.connect({name: 'message:to-non-priv'})
 
-broadcastPort.onDisconnect.addListener(function() {
+/*broadcastPort.onDisconnect.addListener(function() {
   broadcastPort = null
   broadcastPort = proxyPort({name: 'message:to-non-priv'})
   broadcastPort.onDisconnect.addListener(checkHealth)
-})
+})*/
 
 forge.message.broadcast = function(type, content, callback, error) {
   var callid = forge.tools.UUID()
