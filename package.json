@@ -1,6 +1,6 @@
 {
   "name": "@grammarly-npm/browser-extensions",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenForge\r =========",
   "main": "index.js",
   "scripts": {
