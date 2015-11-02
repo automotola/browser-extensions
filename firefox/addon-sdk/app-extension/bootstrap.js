@@ -34,6 +34,7 @@ const bind = Function.call.bind(Function.bind);
 
 let loader = null;
 let unload = null;
+let firstRun = null;
 let cuddlefishSandbox = null;
 let nukeTimer = null;
 
@@ -70,7 +71,10 @@ function readURI(uri) {
 
 // We don't do anything on install & uninstall yet, but in a future
 // we should allow add-ons to cleanup after uninstall.
-function install(data, reason) {}
+function install(data, reason) {
+  firstRun = true
+}
+
 function uninstall(data, reason) {}
 
 function startup(data, reasonCode) {
@@ -253,6 +257,8 @@ function startup(data, reasonCode) {
       main: main,
       prefsURI: rootURI + 'defaults/preferences/prefs.js'
     });
+
+    firstRun && clearPrefs(require);
   } catch (error) {
     dump('Bootstrap error: ' +
          (error.message ? error.message : String(error)) + '\n' +
@@ -320,13 +326,16 @@ function shutdown(data, reasonCode) {
   }
 };
 
-function nukeModules() {
-  nukeTimer = null;
-  var prefs = loader.modules['resource://gre/modules/commonjs/sdk/simple-prefs.js'].exports.prefs
+function clearPrefs(require) {
   console.log('cleanup prefs')
+  let {prefs} = require('sdk/simple-prefs')
   for (let key in prefs) {
     delete prefs[key];
   }
+};
+
+function nukeModules() {
+  nukeTimer = null;
   // module objects store `exports` which comes from sandboxes
   // We should avoid keeping link to these object to avoid leaking sandboxes
   for (let key in loader.modules) {
