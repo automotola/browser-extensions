@@ -322,6 +322,11 @@ function shutdown(data, reasonCode) {
 
 function nukeModules() {
   nukeTimer = null;
+  var prefs = loader.modules['resource://gre/modules/commonjs/sdk/simple-prefs.js'].exports.prefs
+  console.log('cleanup prefs')
+  for (let key in prefs) {
+    delete prefs[key];
+  }
   // module objects store `exports` which comes from sandboxes
   // We should avoid keeping link to these object to avoid leaking sandboxes
   for (let key in loader.modules) {
